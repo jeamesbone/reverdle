@@ -120,7 +120,7 @@ main {
 .misses-block {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: 100px;
+  max-height: 108px;
   overflow-y: auto;
 }
 
@@ -184,8 +184,20 @@ h2 {
 
 .row.shake { animation: shake 0.4s ease; }
 
-.misses { display: flex; flex-direction: column; gap: 5px; align-items: center; }
-.misses .row { opacity: 0.85; }
+/* Newest miss gets a row to itself; older ones pair up to save height. */
+.misses {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-content: center;
+  gap: 5px 14px;
+}
+
+.misses > :first-child { grid-column: 1 / -1; }
+
+.misses .row {
+  gap: 3px;
+  opacity: 0.85;
+}
 .misses .tile { --tile: 26px; font-size: 13px; border-radius: 3px; }
 
 .message {

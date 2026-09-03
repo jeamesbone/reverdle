@@ -100,7 +100,8 @@ opened automatically on a first visit; the board is the first thing you see.
   pinned to the bottom and `fitBoard()` in `game.js` solves for the tile size:
   it collapses the tiles, measures everything else that is on screen, and gives
   the rows whatever height is left. Misses scroll in place rather than pushing
-  the board around.
+  the board around, with the newest on its own row and older ones paired into
+  two columns.
 - **A quiet clock** — the timer runs from your first keystroke but is only shown
   once the picture is finished. A ticking clock just makes the puzzle stressful.
 - **Reduced motion** — tile pops and the shake animation are dropped when the
