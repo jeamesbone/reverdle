@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Every puzzle row has exactly one solution
+        run: node tools/verify.js
+      - name: Game logic
+        run: node tools/test-game.js
+      - name: Generated data matches the generators
+        run: |
+          node tools/generate.js
+          node tools/generate-tutorial.js
+          git diff --exit-code -- data/
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/data
+          cp index.html styles.css game.js sw.js manifest.webmanifest icon.svg icon-maskable.svg _site/
+          cp data/dict.js data/puzzles.js data/tutorial.js _site/data/
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

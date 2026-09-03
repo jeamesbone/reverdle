@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Reverdle</title>
+<meta name="description" content="Reverse Wordle: you get the answer, you have to paint the picture." />
+<meta name="theme-color" content="#0f1113" id="theme-color" />
+<meta name="color-scheme" content="light dark" />
+<meta property="og:title" content="Reverdle" />
+<meta property="og:description" content="Reverse Wordle: you get the answer, you have to paint the picture." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Reverdle" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="stylesheet" href="styles.css" />
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  try {
+    var t = localStorage.getItem('reverdle-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%236aaa64'/><rect x='6' y='6' width='9' height='9' fill='%23c9b458'/><rect x='17' y='17' width='9' height='9' fill='%23c9b458'/></svg>" />
+</head>
+<body>
+<noscript>
+  <p style="text-align:center;padding:24px">Reverdle needs JavaScript to run.</p>
+</noscript>
+<header>
+  <h1>Reverdle</h1>
+  <p class="tagline">You get the answer. Paint the picture.</p>
+  <button id="stats-btn" class="icon-btn left" aria-label="Statistics">
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <rect x="1" y="9" width="3.2" height="6" rx="1" fill="currentColor" />
+      <rect x="6.4" y="5" width="3.2" height="10" rx="1" fill="currentColor" />
+      <rect x="11.8" y="1" width="3.2" height="14" rx="1" fill="currentColor" />
+    </svg>
+  </button>
+  <button id="help-btn" class="icon-btn" aria-label="How to play">?</button>
+</header>
+
+<main>
+  <section class="answer-card">
+    <h2 id="answer-heading">Today&rsquo;s answer</h2>
+    <div id="answer-row" class="row answer" aria-label="the answer word"></div>
+  </section>
+
+  <section class="board-card">
+    <h2>Target picture <span id="progress" class="progress"></span>
+      <span id="timer" class="timer">0:00</span></h2>
+    <div id="board" class="board"></div>
+  </section>
+
+  <section id="input-card" class="input-card">
+    <div id="current-row" class="row current"></div>
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="misses-card" class="misses-card" hidden>
+    <h2>Your misses</h2>
+    <div id="misses" class="misses"></div>
+  </section>
+
+  <section id="result" class="result" hidden>
+    <p id="result-text"></p>
+    <div id="stats-summary" class="stats"></div>
+    <div class="result-actions">
+      <button id="share-btn" class="btn">Share</button>
+      <button id="practice-btn" class="btn ghost">Random practice puzzle</button>
+    </div>
+  </section>
+
+  <div id="keyboard" class="keyboard"></div>
+  <p class="footnote"><span id="puzzle-id"></span> &middot; every row has exactly one solution</p>
+</main>
+
+<dialog id="help">
+  <h2>How to play</h2>
+  <p>Normal Wordle hides the answer and shows you the colours. <strong>Reverdle does the opposite.</strong></p>
+  <ol>
+    <li>You are given the answer word.</li>
+    <li>You are given a picture: four rows of green / yellow / grey tiles.</li>
+    <li>Find the guess word that would produce each row against that answer.</li>
+  </ol>
+  <p>Type any guess and it lands on whichever row it paints &mdash; rows can be solved in any order. Wrong guesses show you the picture you actually made, which is your best clue and costs you nothing but time.</p>
+  <p>You are scored on the <strong>clock</strong>, which starts on your first keystroke and pauses when you leave the tab.</p>
+  <p>Every row has <strong>exactly one</strong> solution out of all 14,854 accepted words. No ambiguity, no luck.</p>
+  <p class="key-legend">
+    <span class="chip g"></span> right letter, right spot
+    <span class="chip y"></span> right letter, wrong spot
+    <span class="chip x"></span> not in the answer
+  </p>
+  <button id="tutorial-open" class="btn">Walk me through an example</button>
+
+  <div class="field">
+    <span>Appearance</span>
+    <div class="segmented" id="theme-picker" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="system">System</button>
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
+
+  <label class="toggle">
+    <input type="checkbox" id="cb-toggle" />
+    <span>Colour-blind palette (blue / orange)</span>
+  </label>
+  <div class="field">
+    <span>Data</span>
+    <button id="reset-btn" class="btn danger">Reset all data</button>
+    <div id="reset-confirm" class="reset-confirm" hidden>
+      <p>Erases your stats, streaks, settings and today&rsquo;s progress. This cannot be undone.</p>
+      <div class="result-actions">
+        <button id="reset-yes" class="btn danger">Erase everything</button>
+        <button id="reset-no" class="btn ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="help-close" class="btn">Got it</button>
+</dialog>
+
+<dialog id="tutorial">
+  <h2>Tutorial</h2>
+  <p id="tut-lead" class="tut-lead"></p>
+
+  <div class="tut-answer">
+    <span>Answer</span>
+    <div id="tut-answer-row" class="row"></div>
+  </div>
+
+  <div id="tut-board" class="board"></div>
+  <div id="tut-current" class="row current"></div>
+  <p id="tut-message" class="message" role="status" aria-live="polite"></p>
+  <div id="tut-misses" class="misses"></div>
+  <div id="tut-keyboard" class="keyboard"></div>
+
+  <div class="result-actions">
+    <button id="tut-hint" class="btn ghost">Reveal a row</button>
+    <button id="tut-close" class="btn">Close</button>
+  </div>
+</dialog>
+
+<dialog id="stats-dialog">
+  <h2>Statistics</h2>
+  <div id="stats-full" class="stats"></div>
+  <p id="stats-empty" class="stats-empty">Finish today&rsquo;s puzzle to start a streak.</p>
+  <button id="stats-close" class="btn">Close</button>
+</dialog>
+
+<script src="data/dict.js"></script>
+<script src="data/tutorial.js"></script>
+<script src="data/puzzles.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

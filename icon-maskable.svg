@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Reverdle">
+  <rect width="512" height="512" fill="#17191c" />
+  <g>
+    <rect x="128" y="128" width="120" height="120" rx="16" fill="#6aaa64" />
+    <rect x="264" y="128" width="120" height="120" rx="16" fill="#3a3f45" />
+    <rect x="128" y="264" width="120" height="120" rx="16" fill="#c9b458" />
+    <rect x="264" y="264" width="120" height="120" rx="16" fill="#6aaa64" />
+  </g>
+</svg>
