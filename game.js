@@ -391,29 +391,47 @@
     return row;
   }
 
-  // A guess deserves a beat on screen before the board moves on: a hit lands
-  // the word in the pattern it painted, a miss holds it in place, red, while
-  // it shakes. Purely visual - the state is already saved either way. Where
-  // there is no timer (the headless tests) the beat is simply skipped.
-  const FLASH_MS = { hit: 700, miss: 480 };
+  // A guess is scored where you typed it, and then goes somewhere: one that
+  // fits is carried up into the pattern row it painted ('lift'), holds there a
+  // moment ('landed'), and the next pattern takes over; one that fits nothing
+  // gets most of the way and drops back ('bounce'). Purely visual - the state
+  // is saved before any of it starts - and skipped where there is no timer,
+  // which is how the headless tests play a puzzle synchronously.
+  const FLASH_MS = { lift: 520, landed: 420, bounce: 560 };
   let flashTimer = null;
   let entering = false;
 
   function flash(detail) {
     state.flash = detail;
     render();
+    if (detail.kind === 'lift' || detail.kind === 'bounce') {
+      aimCurrentRow();
+      el.current.classList.add(detail.kind === 'lift' ? 'lifting' : 'bouncing');
+    }
     if (typeof setTimeout !== 'function') return endFlash();
     if (flashTimer) clearTimeout(flashTimer);
     flashTimer = setTimeout(endFlash, FLASH_MS[detail.kind]);
   }
 
-  // Ends the beat early if the player types on through it.
+  // How far the row in flight has to travel. Measured after the render that
+  // puts the colours in, so it is measured against the layout it flies through.
+  function aimCurrentRow() {
+    const target = el.board.children[0];
+    if (!target || typeof target.getBoundingClientRect !== 'function') return;
+    const gap = el.current.getBoundingClientRect().top - target.getBoundingClientRect().top;
+    document.documentElement.style.setProperty('--lift', Math.max(0, Math.round(gap)) + 'px');
+  }
+
+  // Ends the beat early if the player types on through it. A lift is only half
+  // the story, so ending one moves it on to its landing rather than skipping it.
   function endFlash() {
     if (typeof clearTimeout === 'function' && flashTimer) clearTimeout(flashTimer);
     flashTimer = null;
     if (!state.flash) return;
-    entering = state.flash.kind === 'hit' && !state.done;
+    const done = state.flash;
     state.flash = null;
+    if (done.kind === 'lift') return flash({ kind: 'landed', row: done.row });
+    entering = done.kind === 'landed' && !state.done;
     render();
     entering = false;
   }
@@ -426,19 +444,28 @@
     );
 
     // One pattern at a time while playing; the whole list once it is finished.
-    // A hit holds its own row for a beat before the next pattern replaces it.
+    // A guess still in flight keeps its target row on screen and empty - the
+    // row travelling up is the one carrying the word - and the full list waits
+    // until it has landed.
     const active = activeRow();
-    const shown = flashing && flashing.kind === 'hit' ? flashing.row : active;
+    const flying = Boolean(flashing && flashing.kind === 'lift');
+    const aimed = Boolean(flashing && (flashing.kind === 'lift' || flashing.kind === 'landed'));
+    const shown = aimed ? flashing.row : active;
     el.board.replaceChildren(
       ...state.rows
         .map(([pattern], i) => [pattern, i])
-        .filter(([, i]) => state.done || i === shown)
+        .filter(([, i]) => (state.done && !flying) || i === shown)
         .map(([pattern, i]) => {
-          const solvedWord = state.solved[i];
+          const hold = flying && i === flashing.row;
+          const solvedWord = hold ? null : state.solved[i];
           const row = rowOf(solvedWord, pattern, Boolean(solvedWord));
           if (solvedWord) row.classList.add('locked');
           else if (entering) row.classList.add('entering');
-          if (flashing && flashing.kind === 'hit' && i === flashing.row) row.classList.add('hit');
+          // The row that just flew in is already exactly here; popping it now
+          // would undo the landing.
+          if (flashing && flashing.kind === 'landed' && i === flashing.row) {
+            row.classList.add('settled');
+          }
           return row;
         })
     );
@@ -452,16 +479,26 @@
       state.done ? total : shown
     );
 
-    // The word stays put through a miss so the shake has something to shake.
-    const typed = flashing && flashing.kind === 'miss' ? flashing.word : state.typed;
+    // A guess in flight is shown scored, in the row you typed it into: the
+    // colours arrive first, then the row carries them where they belong.
+    const typed = flashing && flashing.word ? flashing.word : state.typed;
+    const scored = flashing && flashing.pattern ? flashing.pattern : null;
     const cur = [];
     for (let i = 0; i < 5; i++) {
-      cur.push(tile(typed[i] || '', null, typed[i] ? 'filled' : ''));
+      const colour = scored ? CLASS[scored[i]] : null;
+      cur.push(tile(typed[i] || '', colour, !colour && typed[i] ? 'filled' : ''));
     }
     el.current.replaceChildren(...cur);
-    el.current.classList.toggle('wrong', Boolean(flashing && flashing.kind === 'miss'));
-    el.inputCard.hidden = state.done;
-    el.keyboard.hidden = state.done;
+    // flash() adds the travelling class back once it has measured the distance.
+    el.current.classList.remove('lifting');
+    el.current.classList.remove('bouncing');
+    el.current.classList.remove('wrong');
+    el.current.classList.remove('shake');
+    // The last guess of a puzzle is still a guess in flight. Clearing the
+    // chrome the moment the puzzle is won would take the flying row away with
+    // it, and move the pattern row it is aiming at while it is on its way.
+    el.inputCard.hidden = state.done && !flying;
+    el.keyboard.hidden = state.done && !flying;
 
     el.missesCard.hidden = state.misses.length === 0;
     el.misses.replaceChildren(
@@ -470,12 +507,12 @@
         .reverse()
         .map((m, i) => {
           const row = rowOf(m.w, m.p, true);
-          if (i === 0 && flashing && flashing.kind === 'miss') row.classList.add('entering');
+          if (i === 0 && flashing && flashing.kind === 'bounce') row.classList.add('entering');
           return row;
         })
     );
 
-    el.result.hidden = !state.done;
+    el.result.hidden = !state.done || flying;
     if (state.done) {
       const g = state.guesses;
       const misses = g - state.rows.length;
@@ -496,9 +533,12 @@
     el.message.className = 'message' + (kind ? ' ' + kind : '');
   }
 
+  // For a guess that never gets scored at all: no colours to show, so the row
+  // just says no and keeps the word for you to edit.
   function shake() {
     el.current.classList.remove('shake');
     void el.current.offsetWidth;
+    el.current.classList.add('wrong');
     el.current.classList.add('shake');
   }
 
@@ -548,20 +588,20 @@
         recordResult();
       }
       save();
-      flash({ kind: 'hit', row: hit });
+      flash({ kind: 'lift', row: hit, word: guess, pattern: pattern });
     } else {
       state.misses.push({ w: guess, p: pattern });
       save();
-      flash({ kind: 'miss', word: guess });
-      shake();
+      flash({ kind: 'bounce', word: guess, pattern: pattern });
     }
   }
 
   function press(k) {
     if (state.done) return;
     startClock();
-    // Typing on through the beat after a guess cuts it short.
-    if (state.flash) endFlash();
+    // Typing on through cuts the beat short - all of it, not just the half
+    // of it a lift is on when the key lands.
+    while (state.flash) endFlash();
     if (k === 'ENTER') return submit();
     if (k === 'BACK') {
       state.typed = state.typed.slice(0, -1);

@@ -13,6 +13,8 @@
   --tile: 54px;
   /* Set by fitBoard() once the tiles have taken what they need. */
   --misses-max: 108px;
+  /* Set by aimCurrentRow(): how far a scored guess has to travel. */
+  --lift: 0px;
   --radius: 10px;
 }
 
@@ -211,13 +213,9 @@ h2 {
 /* Unsolved target tiles: colour only, no letter. */
 .board .row.locked .tile { animation: pop 0.25s ease; }
 
-/* The row a guess just painted, landing left to right before the next pattern
-   takes its place. Ordered after .locked so it wins the shared specificity. */
-.board .row.hit .tile { animation: land 0.42s ease both; }
-.board .row.hit .tile:nth-child(2) { animation-delay: 0.06s; }
-.board .row.hit .tile:nth-child(3) { animation-delay: 0.12s; }
-.board .row.hit .tile:nth-child(4) { animation-delay: 0.18s; }
-.board .row.hit .tile:nth-child(5) { animation-delay: 0.24s; }
+/* The row a guess just flew into is already exactly where it belongs, so it
+   must not pop on arrival. Ordered after .locked to win the shared specificity. */
+.board .row.settled .tile { animation: none; }
 
 /* The next pattern, and a fresh miss, arrive rather than blink into place. */
 .board .row.entering .tile,
@@ -235,11 +233,24 @@ h2 {
 
 .row.shake { animation: shake 0.4s ease; }
 
-/* A miss keeps its word on screen for a beat, outlined red, while it shakes. */
+/* A guess that never gets as far as being scored: no colours to show it, so
+   the row says no in red and keeps the word for you to edit. */
 .row.current.wrong .tile {
   border-color: var(--red);
   color: var(--red);
   animation: none;
+}
+
+/* A scored guess travels from the row you typed it in to the pattern row it
+   was aimed at. --lift is the distance between the two, set by fitBoard's
+   sibling aimCurrentRow() at the moment the colours go in. Both animations
+   hold still at the start: that pause is the beat you read the colours in. */
+.row.current.lifting {
+  animation: lift 520ms cubic-bezier(0.32, 0, 0.2, 1) both;
+}
+
+.row.current.bouncing {
+  animation: bounce 560ms cubic-bezier(0.3, 0, 0.35, 1) both;
 }
 
 /* Misses pair up two-across; an odd one out is centred on its own row. */
@@ -577,10 +588,19 @@ dialog p { margin: 10px 0; }
   100% { transform: scale(1); }
 }
 
-@keyframes land {
-  0% { transform: scale(0.82); }
-  55% { transform: scale(1.09); box-shadow: 0 0 0 3px var(--green); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; }
+/* Up, and it stays up - the board fills in underneath it as it arrives. */
+@keyframes lift {
+  0%, 24% { transform: translateY(0); }
+  100% { transform: translateY(calc(-1 * var(--lift, 0px))); }
+}
+
+/* Most of the way up, off the row that would not have it, and back down. */
+@keyframes bounce {
+  0%, 18% { transform: translateY(0); }
+  50% { transform: translateY(calc(-0.88 * var(--lift, 0px))); }
+  66% { transform: translateY(calc(-0.88 * var(--lift, 0px) + 14px)) rotate(-2deg); }
+  84% { transform: translateY(calc(-0.2 * var(--lift, 0px))) rotate(1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
 @keyframes rise {
@@ -606,10 +626,11 @@ dialog p { margin: 10px 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .board .row.locked .tile,
-  .board .row.hit .tile,
   .board .row.entering .tile,
   .misses .row.entering .tile,
   .row.current .tile.filled,
+  .row.current.lifting,
+  .row.current.bouncing,
   .row.shake {
     animation: none;
   }

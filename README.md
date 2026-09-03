@@ -137,10 +137,27 @@ failing to start.
   last, and each miss fills a little more of the space beneath them instead of
   shunting the board around. Once that space is gone the miss list scrolls in
   place. Misses lay out two-across with an odd one out centred.
+- **A guess goes somewhere** — pressing enter scores the word where you typed
+  it, right there in the input row, and then the row travels. One that fits is
+  carried up onto the pattern row it painted and stays; the board fills in
+  underneath it as it arrives, so the swap is invisible and the row it lands on
+  is told not to pop. One that fits nothing gets most of the way, tips off the
+  row that would not have it, and drops back, while the miss rises into the
+  list below. A guess that never gets scored at all — not a word, wrong length,
+  already tried — has no colours to show, so it just goes red and shakes, and
+  keeps the word for you to edit.
+
+  `aimCurrentRow()` measures the gap between the two rows into `--lift` after
+  the render that puts the colours in, so the distance always matches the
+  layout the row flies through. The last guess of a puzzle is still a guess in
+  flight: the keyboard and the input row stay put until it lands, or clearing
+  them would take the flying row away and move its target mid-flight, and the
+  result card waits for the landing rather than pre-empting it.
 - **A quiet clock** — the timer runs from your first keystroke but is only shown
   once the picture is finished. A ticking clock just makes the puzzle stressful.
-- **Reduced motion** — tile pops and the shake animation are dropped when the
-  system asks for it.
+- **Reduced motion** — the flight, the tile pops and the shake are all dropped
+  when the system asks for it. The colours and the red still land; they are
+  information, not decoration.
 - **Reset all data** — under *Data* in the menu. Two-step confirm, then
   it removes every `reverdle-` key and reloads. It deliberately does *not* call
   `localStorage.clear()`: GitHub Pages puts every site on one origin, so that
