@@ -309,20 +309,30 @@
     const tileRows = 1 + (state.done ? state.rows.length : 2); // answer + board + input
 
     root.style.setProperty('--tile', '0px');
+    // Misses are the one part that is allowed to give, so they are measured out
+    // of the way first. Left in, a long miss list counts as fixed overhead and
+    // starves the tiles down to nothing.
+    root.style.setProperty('--misses-max', '0px');
 
     const style = getComputedStyle(el.main);
     const gap = parseFloat(style.rowGap) || 0;
     const shown = Array.prototype.filter.call(el.main.children, (node) => !node.hidden);
-    let used = gap * Math.max(0, shown.length - 1);
-    for (const node of shown) used += node.offsetHeight;
+    const stack = () => {
+      let total = gap * Math.max(0, shown.length - 1);
+      for (const node of shown) total += node.offsetHeight;
+      return total;
+    };
 
     const room =
       el.main.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    const byHeight = (room - used) / tileRows + BORDER;
+    const byHeight = (room - stack()) / tileRows + BORDER;
     const byWidth = (el.main.clientWidth - 24 - 5 * 4) / 5;
 
-    const tile = Math.floor(Math.max(28, Math.min(62, Math.min(byHeight, byWidth))));
+    const tile = Math.floor(Math.max(28, Math.min(72, Math.min(byHeight, byWidth))));
     root.style.setProperty('--tile', tile + 'px');
+
+    // Whatever the board did not need is the misses' to grow into.
+    root.style.setProperty('--misses-max', Math.max(0, room - stack()) + 'px');
   }
 
   function applyTheme(next) {

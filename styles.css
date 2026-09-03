@@ -11,6 +11,8 @@
   --accent: #6aaa64;
   --red: #e0796b;
   --tile: 54px;
+  /* Set by fitBoard() once the tiles have taken what they need. */
+  --misses-max: 108px;
   --radius: 10px;
 }
 
@@ -113,9 +115,12 @@ main {
   gap: 10px;
 }
 
-/* Showing one row at a time leaves slack; split it above and below the play
-   area rather than letting it all pool between the board and the keyboard. */
-.answer-block { margin-top: auto; }
+/* Showing one row at a time leaves a lot of slack, and all of it collects
+   above the keyboard - below the misses, not above them. So the answer, the
+   pattern and the row you type into hold their position for the whole puzzle,
+   and each miss fills a little more of the space under them instead of
+   shunting the board around. */
+.answer-block { margin-top: 4vh; }
 
 .stack {
   flex: none;
@@ -125,11 +130,13 @@ main {
   gap: 6px;
 }
 
-/* Misses are the only part allowed to overflow - everything else must fit. */
+/* Misses are the only part allowed to overflow - everything else must fit.
+   They grow upwards into the slack above the keyboard rather than working
+   inside a fixed window, and only start scrolling once that slack is gone. */
 .misses-block {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: 108px;
+  max-height: var(--misses-max);
   overflow-y: auto;
 }
 

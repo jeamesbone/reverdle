@@ -123,12 +123,20 @@ failing to start.
   stale-while-revalidate for assets so they refresh in the background. Bumping
   `CACHE` forces the update a load earlier.
 - **Fits the viewport** — no page scrolling and no card chrome. The keyboard is
-  pinned to the bottom and `fitBoard()` in `game.js` solves for the tile size:
-  it collapses the tiles, measures everything else that is on screen, and gives
-  the rows whatever height is left. Only two tile rows are on screen mid-puzzle,
-  so the play area is centred between the header and the keyboard. Misses scroll
-  in place rather than pushing the board around, laid out two-across with an odd
-  one out centred.
+  pinned to the bottom and `fitBoard()` in `game.js` solves for the tile size in
+  two passes. First it collapses the tiles *and* the miss list, measures
+  everything else on screen, and gives the rows whatever height is left, capped
+  at 72px and by the width five tiles can have. Then it hands the space the
+  board did not take back to the misses as `--misses-max`. The order matters:
+  measured the other way round, a long miss list reads as fixed overhead and
+  starves the tiles down to their 28px floor.
+
+  Only two tile rows are on screen mid-puzzle, which leaves real slack. It all
+  collects above the keyboard, *below* the misses — so the answer, the pattern
+  and the row you type into hold the same position from the first guess to the
+  last, and each miss fills a little more of the space beneath them instead of
+  shunting the board around. Once that space is gone the miss list scrolls in
+  place. Misses lay out two-across with an odd one out centred.
 - **A quiet clock** — the timer runs from your first keystroke but is only shown
   once the picture is finished. A ticking clock just makes the puzzle stressful.
 - **Reduced motion** — tile pops and the shake animation are dropped when the
