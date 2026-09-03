@@ -399,7 +399,12 @@
   // is what tells the two apart. Purely visual - the state is saved before any
   // of it starts - and skipped where there is no timer, which is how the
   // headless tests play a puzzle synchronously.
-  const FLASH_MS = { score: 430, lift: 380, landed: 380, bounce: 480 };
+  // SCORE_ROLL is where the last tile lands, and has to match the stagger and
+  // duration in the .scoring rules. SCORE_HOLD is the beat after it: the row
+  // sits there fully scored, and only then does it go anywhere.
+  const SCORE_ROLL = 4 * 55 + 200;
+  const SCORE_HOLD = 240;
+  const FLASH_MS = { score: SCORE_ROLL + SCORE_HOLD, lift: 380, landed: 380, bounce: 480 };
   let flashTimer = null;
   let entering = false;
 

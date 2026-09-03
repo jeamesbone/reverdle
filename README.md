@@ -138,8 +138,9 @@ failing to start.
   shunting the board around. Once that space is gone the miss list scrolls in
   place. Misses lay out two-across with an odd one out centred.
 - **A guess goes somewhere** — pressing enter scores the word where you typed
-  it, right there in the input row, a tile at a time from the left. Then the
-  row travels. One that fits is carried up onto the pattern row it painted and
+  it, right there in the input row, a tile at a time from the left. The row
+  then sits there, fully scored and still, for a beat — long enough to read
+  what you painted before anything happens to it. Then it travels. One that fits is carried up onto the pattern row it painted and
   stays; the board fills in underneath it as it arrives, so the swap is
   invisible and the row it lands on is told not to pop. One that fits nothing
   barely leaves the ground before that row turns it away, and it shakes itself
@@ -151,7 +152,9 @@ failing to start.
   The colours roll in from one keyframe block with only a `0%` frame in it: the
   tiles already carry their colour classes, so the end of each tile's animation
   is whatever its own class says, and green, yellow and grey all animate from
-  the same rule.
+  the same rule. The scoring phase is written as `SCORE_ROLL + SCORE_HOLD` so
+  the beat stays a beat: `SCORE_ROLL` tracks the stagger and duration in the
+  CSS, `SCORE_HOLD` is the pause that follows it.
 
   `aimCurrentRow()` measures the gap between the two rows into `--lift` after
   the render that puts the colours in, so the distance always matches the
