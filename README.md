@@ -1,5 +1,7 @@
 # Reverdle
 
+Play it: **https://jeamesbone.github.io/reverdle/**
+
 Wordle, reversed. You are **given the answer**. You are given a **picture** — four
 rows of green / yellow / grey tiles. Your job is to find the guess words that
 paint that picture against that answer.
@@ -91,6 +93,16 @@ time from the `?` button.
   service worker in `sw.js`. Bump `CACHE` there whenever an asset changes.
 - **Reduced motion** — tile pops and the shake animation are dropped when the
   system asks for it.
+- **Reset all data** — under *Data* in the how-to dialog. Two-step confirm, then
+  `localStorage.clear()` and a reload.
+
+## Deploying
+
+`.github/workflows/pages.yml` runs on every push to `main`: it verifies every
+puzzle row still has exactly one solution, runs the game tests, re-runs both
+generators and fails if `data/` has drifted from them, then assembles `_site`
+and publishes it to GitHub Pages. All asset paths are relative, so the site
+works from the `/reverdle/` subpath.
 
 ## Layout
 
