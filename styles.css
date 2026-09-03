@@ -75,6 +75,10 @@ header {
 
 h1 {
   margin: 0;
+  /* Triple-tapped for a random puzzle, so it must not select on a triple click. */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
   font-size: 26px;
   letter-spacing: 6px;
   text-transform: uppercase;

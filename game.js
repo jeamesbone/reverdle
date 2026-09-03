@@ -54,6 +54,7 @@
     footnote: document.getElementById('footnote'),
     main: document.getElementById('main'),
     help: document.getElementById('help'),
+    title: document.getElementById('title'),
   };
 
   function readJSON(key, fallback) {
@@ -707,11 +708,31 @@
     }
   });
 
-  el.practice.addEventListener('click', () => {
+  // Shared by the practice button and the title's triple tap. Any beat still
+  // running belongs to the puzzle being thrown away, so it goes with it.
+  function newPractice() {
+    if (typeof clearTimeout === 'function' && flashTimer) clearTimeout(flashTimer);
+    flashTimer = null;
     pauseClock();
     loadPractice();
     say('New practice puzzle');
     render();
+  }
+
+  el.practice.addEventListener('click', newPractice);
+
+  // Triple-tapping the title deals a random puzzle - a way back to the game
+  // once the daily is done, without waiting for the result card to offer one.
+  const TAP_WINDOW_MS = 600;
+  let taps = 0;
+  let lastTap = 0;
+  el.title.addEventListener('click', () => {
+    const now = Date.now();
+    taps = now - lastTap < TAP_WINDOW_MS ? taps + 1 : 1;
+    lastTap = now;
+    if (taps < 3) return;
+    taps = 0;
+    newPractice();
   });
 
   document.getElementById('stats-btn').addEventListener('click', () => {

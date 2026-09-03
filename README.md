@@ -88,6 +88,9 @@ opened automatically on a first visit; the board is the first thing you see.
 
 ## What else is in there
 
+- **A random puzzle on demand** — triple-tap the title. It deals a practice
+  puzzle without touching the daily save or the stats, which is the same thing
+  the button on the result card does, only without having to finish first.
 - **Stats** — games played, best time, average, clean solves, current and max
   streak. A streak counts consecutive day indexes and is only shown as live if
   it includes today or yesterday. Open with the chart button, or see it on the

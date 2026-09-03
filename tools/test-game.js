@@ -364,6 +364,31 @@ test('a later row\'s word is a miss while it is not the row on screen', () => {
   assert.strictEqual(ctx.byId.result.hidden, false);
 });
 
+test('triple-tapping the title deals a random practice puzzle', () => {
+  const ctx = openPage();
+  ctx.byId.title.fire('click');
+  ctx.byId.title.fire('click');
+  assert.match(ctx.byId['puzzle-id'].textContent, /^Reverdle #/, 'two taps are just taps');
+
+  ctx.byId.title.fire('click');
+  assert.strictEqual(ctx.byId['puzzle-id'].textContent, 'Practice puzzle');
+  assert.strictEqual(ctx.byId.message.textContent, 'New practice puzzle');
+  assert.strictEqual(solvedRows(ctx), 0, 'a fresh board');
+
+  // The count resets, so the next tap does not immediately deal another.
+  ctx.byId.title.fire('click');
+  assert.strictEqual(ctx.byId.message.textContent, 'New practice puzzle');
+});
+
+test('a practice puzzle is never written to the daily save', () => {
+  const store = new Map();
+  const ctx = openPage(store);
+  const { day } = todaysPuzzle(ctx);
+  for (let i = 0; i < 3; i++) ctx.byId.title.fire('click');
+  typeWord(ctx, 'zzzzz');
+  assert.strictEqual(store.has('reverdle-' + day), false);
+});
+
 test('the colour-blind palette persists and repaints the body', () => {
   const store = new Map();
   const ctx = openPage(store);
