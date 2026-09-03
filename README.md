@@ -129,7 +129,14 @@ failing to start.
   at 72px and by the width five tiles can have. Then it hands the space the
   board did not take back to the misses as `--misses-max`. The order matters:
   measured the other way round, a long miss list reads as fixed overhead and
-  starves the tiles down to their 28px floor.
+  starves the tiles down to their 28px floor. The miss list keeps a 46px
+  `min-height` so it can never be squeezed away entirely; that floor is
+  measured in the collapsed pass, so it counts as overhead and the tiles give
+  way to it rather than the other way round.
+
+  It measures `offsetHeight` and main's own padding, which means **margins on
+  anything inside `main` are invisible to it** and will silently overflow the
+  viewport. Spacing there belongs in main's padding.
 
   Only two tile rows are on screen mid-puzzle, which leaves real slack. It all
   collects above the keyboard, *below* the misses — so the answer, the pattern
