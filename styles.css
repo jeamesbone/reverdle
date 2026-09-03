@@ -9,6 +9,7 @@
   --yellow: #c9b458;
   --grey: #a4aab0;
   --accent: #6aaa64;
+  --red: #e0796b;
   --tile: 54px;
   --radius: 10px;
 }
@@ -186,6 +187,18 @@ h2 {
 /* Unsolved target tiles: colour only, no letter. */
 .board .row.locked .tile { animation: pop 0.25s ease; }
 
+/* The row a guess just painted, landing left to right before the next pattern
+   takes its place. Ordered after .locked so it wins the shared specificity. */
+.board .row.hit .tile { animation: land 0.42s ease both; }
+.board .row.hit .tile:nth-child(2) { animation-delay: 0.06s; }
+.board .row.hit .tile:nth-child(3) { animation-delay: 0.12s; }
+.board .row.hit .tile:nth-child(4) { animation-delay: 0.18s; }
+.board .row.hit .tile:nth-child(5) { animation-delay: 0.24s; }
+
+/* The next pattern, and a fresh miss, arrive rather than blink into place. */
+.board .row.entering .tile,
+.misses .row.entering .tile { animation: rise 0.3s ease both; }
+
 .row.answer .tile {
   border-color: var(--muted);
   background: transparent;
@@ -197,6 +210,13 @@ h2 {
 }
 
 .row.shake { animation: shake 0.4s ease; }
+
+/* A miss keeps its word on screen for a beat, outlined red, while it shakes. */
+.row.current.wrong .tile {
+  border-color: var(--red);
+  color: var(--red);
+  animation: none;
+}
 
 /* Misses pair up two-across; an odd one out is centred on its own row. */
 .misses {
@@ -225,7 +245,7 @@ h2 {
   color: var(--muted);
 }
 
-.message.warn { color: #e0796b; }
+.message.warn { color: var(--red); }
 .message.good { color: var(--green); }
 
 .keyboard {
@@ -542,6 +562,17 @@ dialog p { margin: 10px 0; }
   100% { transform: scale(1); }
 }
 
+@keyframes land {
+  0% { transform: scale(0.82); }
+  55% { transform: scale(1.09); box-shadow: 0 0 0 3px var(--green); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
 @keyframes shake {
   10%, 90% { transform: translateX(-2px); }
   20%, 80% { transform: translateX(4px); }
@@ -560,6 +591,9 @@ dialog p { margin: 10px 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .board .row.locked .tile,
+  .board .row.hit .tile,
+  .board .row.entering .tile,
+  .misses .row.entering .tile,
   .row.current .tile.filled,
   .row.shake {
     animation: none;

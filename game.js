@@ -362,39 +362,82 @@
     return row;
   }
 
+  // A guess deserves a beat on screen before the board moves on: a hit lands
+  // the word in the pattern it painted, a miss holds it in place, red, while
+  // it shakes. Purely visual - the state is already saved either way. Where
+  // there is no timer (the headless tests) the beat is simply skipped.
+  const FLASH_MS = { hit: 700, miss: 480 };
+  let flashTimer = null;
+  let entering = false;
+
+  function flash(detail) {
+    state.flash = detail;
+    render();
+    if (typeof setTimeout !== 'function') return endFlash();
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(endFlash, FLASH_MS[detail.kind]);
+  }
+
+  // Ends the beat early if the player types on through it.
+  function endFlash() {
+    if (typeof clearTimeout === 'function' && flashTimer) clearTimeout(flashTimer);
+    flashTimer = null;
+    if (!state.flash) return;
+    entering = state.flash.kind === 'hit' && !state.done;
+    state.flash = null;
+    render();
+    entering = false;
+  }
+
   function render() {
+    const flashing = state.flash || null;
+
     el.answer.replaceChildren(
       ...state.answer.split('').map((c) => tile(c, null))
     );
 
     // One pattern at a time while playing; the whole list once it is finished.
+    // A hit holds its own row for a beat before the next pattern replaces it.
     const active = activeRow();
+    const shown = flashing && flashing.kind === 'hit' ? flashing.row : active;
     el.board.replaceChildren(
       ...state.rows
         .map(([pattern], i) => [pattern, i])
-        .filter(([, i]) => state.done || i === active)
+        .filter(([, i]) => state.done || i === shown)
         .map(([pattern, i]) => {
           const solvedWord = state.solved[i];
           const row = rowOf(solvedWord, pattern, Boolean(solvedWord));
           if (solvedWord) row.classList.add('locked');
+          else if (entering) row.classList.add('entering');
+          if (flashing && flashing.kind === 'hit' && i === flashing.row) row.classList.add('hit');
           return row;
         })
     );
 
     const total = state.rows.length;
-    el.progress.textContent = state.done ? total + ' / ' + total : active + 1 + ' / ' + total;
+    el.progress.textContent = state.done ? total + ' / ' + total : shown + 1 + ' / ' + total;
 
+    // The word stays put through a miss so the shake has something to shake.
+    const typed = flashing && flashing.kind === 'miss' ? flashing.word : state.typed;
     const cur = [];
     for (let i = 0; i < 5; i++) {
-      cur.push(tile(state.typed[i] || '', null, state.typed[i] ? 'filled' : ''));
+      cur.push(tile(typed[i] || '', null, typed[i] ? 'filled' : ''));
     }
     el.current.replaceChildren(...cur);
+    el.current.classList.toggle('wrong', Boolean(flashing && flashing.kind === 'miss'));
     el.inputCard.hidden = state.done;
     el.keyboard.hidden = state.done;
 
     el.missesCard.hidden = state.misses.length === 0;
     el.misses.replaceChildren(
-      ...state.misses.slice().reverse().map((m) => rowOf(m.w, m.p, true))
+      ...state.misses
+        .slice()
+        .reverse()
+        .map((m, i) => {
+          const row = rowOf(m.w, m.p, true);
+          if (i === 0 && flashing && flashing.kind === 'miss') row.classList.add('entering');
+          return row;
+        })
     );
 
     el.result.hidden = !state.done;
@@ -457,6 +500,8 @@
 
     state.guesses++;
     state.typed = '';
+    // The counter and the tiles say it; a line of prose would only repeat them.
+    say('');
 
     if (hit >= 0) {
       // It is a solution now, not a miss - it should not be in both places.
@@ -467,20 +512,21 @@
         pauseClock();
         recordResult();
       }
-      // The counter above the next pattern already says how far along you are.
-      say('');
+      save();
+      flash({ kind: 'hit', row: hit });
     } else {
       state.misses.push({ w: guess, p: pattern });
-      // The miss appearing below says it better than a line of prose would.
-      say('');
+      save();
+      flash({ kind: 'miss', word: guess });
+      shake();
     }
-    save();
-    render();
   }
 
   function press(k) {
     if (state.done) return;
     startClock();
+    // Typing on through the beat after a guess cuts it short.
+    if (state.flash) endFlash();
     if (k === 'ENTER') return submit();
     if (k === 'BACK') {
       state.typed = state.typed.slice(0, -1);
