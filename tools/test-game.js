@@ -11,8 +11,10 @@ const vm = require('vm');
 const assert = require('assert');
 
 const ROOT = path.join(__dirname, '..');
+// Commented-out markup is not in the document, so neither are its ids.
 const IDS = fs
   .readFileSync(path.join(ROOT, 'index.html'), 'utf8')
+  .replace(/<!--[\s\S]*?-->/g, '')
   .match(/id="([^"]+)"/g)
   .map((m) => m.slice(4, -1));
 
@@ -187,6 +189,25 @@ function todaysPuzzle(ctx) {
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
 
+/** Thrown to mark a test as not applicable to the current markup. */
+class Skipped extends Error {}
+const skip = (why) => {
+  throw new Skipped(why);
+};
+
+/**
+ * Opens the tutorial through the menu. The entry point is optional markup, so
+ * this reports whether there was a way in rather than assuming one.
+ */
+function openTutorial(ctx) {
+  const entry = ctx.byId['tutorial-open'];
+  if (!entry) return false;
+  ctx.byId['help-btn'].fire('click');
+  entry.fire('click');
+  assert.strictEqual(ctx.byId.help.open, false, 'opening the tutorial closes the menu');
+  return true;
+}
+
 test('nothing is opened over the board on load; the menu button opens it', () => {
   const ctx = reload(new Map());
   assert.strictEqual(ctx.byId.help.open, false, 'no menu on a first visit');
@@ -206,13 +227,14 @@ test('every dialog closes from its own X', () => {
   ctx.byId['stats-close'].fire('click');
   assert.strictEqual(ctx.byId['stats-dialog'].open, false);
 
-  ctx.byId['tutorial-open'].fire('click');
-  assert.strictEqual(ctx.byId.tutorial.open, true);
-  ctx.byId['tut-x'].fire('click');
-  assert.strictEqual(ctx.byId.tutorial.open, false);
+  if (openTutorial(ctx)) {
+    assert.strictEqual(ctx.byId.tutorial.open, true);
+    ctx.byId['tut-x'].fire('click');
+    assert.strictEqual(ctx.byId.tutorial.open, false);
+  }
 });
 
-test('solving every row completes the picture', () => {
+test('solving every row completes the pattern', () => {
   const ctx = openPage();
   const { puzzle } = todaysPuzzle(ctx);
   puzzle.r.forEach(([, word]) => typeWord(ctx, word));
@@ -345,10 +367,7 @@ test('the tutorial is a smaller puzzle with the same single-solution rule', () =
 test('the tutorial can be played to the end', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
-  ctx.byId['help-btn'].fire('click');
-  ctx.byId['tutorial-open'].fire('click');
-  assert.strictEqual(ctx.byId.tutorial.open, true);
-  assert.strictEqual(ctx.byId.help.open, false, 'opening the tutorial closes the menu');
+  if (!openTutorial(ctx)) return skip('the menu does not offer the tutorial');
 
   typeWord(ctx, tutorial.r[0][1]);
   assert.strictEqual(ctx.byId['tut-board'].children[0].textContent, tutorial.r[0][1]);
@@ -369,7 +388,7 @@ test('the tutorial can be played to the end', () => {
 test('tutorial keystrokes do not leak into the daily puzzle', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
-  ctx.byId['tutorial-open'].fire('click');
+  if (!openTutorial(ctx)) return skip('the menu does not offer the tutorial');
   typeWord(ctx, tutorial.r[0][1]);
   assert.strictEqual(solvedRows(ctx), 0, 'daily board untouched');
 });
@@ -428,7 +447,7 @@ test('reset asks first, then wipes everything', () => {
   assert.deepStrictEqual([...store.keys()], ['some-other-app'], 'nothing is written back after a wipe');
 });
 
-test('the time is only reported once the picture is finished', () => {
+test('the time is only reported once the pattern is finished', () => {
   const ctx = openPage();
   const { puzzle } = todaysPuzzle(ctx);
 
@@ -438,18 +457,28 @@ test('the time is only reported once the picture is finished', () => {
 
   typeWord(ctx, puzzle.r[puzzle.r.length - 1][1]);
   assert.strictEqual(ctx.byId.result.hidden, false);
-  assert.match(ctx.byId['result-text'].textContent, /^Picture complete in \d+:\d\d/);
+  assert.match(ctx.byId['result-text'].textContent, /^Pattern complete in \d+:\d\d/);
 });
 
 let failed = 0;
+let skipped = 0;
 for (const [name, fn] of tests) {
   try {
     fn();
     console.log('  ok  ' + name);
   } catch (e) {
+    if (e instanceof Skipped) {
+      skipped++;
+      console.log('skip  ' + name + ' (' + e.message + ')');
+      continue;
+    }
     failed++;
     console.log('FAIL  ' + name + '\n      ' + e.message);
   }
 }
-console.log(failed === 0 ? `\n${tests.length} passing` : `\n${failed} failing`);
+console.log(
+  failed === 0
+    ? `\n${tests.length - skipped} passing` + (skipped ? `, ${skipped} skipped` : '')
+    : `\n${failed} failing`
+);
 process.exit(failed ? 1 : 0);

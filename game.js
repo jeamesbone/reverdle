@@ -389,7 +389,7 @@
       const g = state.guesses;
       const misses = g - state.rows.length;
       el.resultText.textContent =
-        `Picture complete in ${formatTime(elapsedMs())}` +
+        `Pattern complete in ${formatTime(elapsedMs())}` +
         (misses === 0 ? ' with no misses.' : ` with ${misses} miss${misses === 1 ? '' : 'es'}.`);
       el.share.hidden = !state.daily;
       el.statsSummary.hidden = !state.daily;
@@ -452,7 +452,7 @@
       say(state.done ? '' : left + (left === 1 ? ' row left' : ' rows left'), 'good');
     } else {
       state.misses.push({ w: guess, p: pattern });
-      say('Not one of the rows - here is the picture you made', null);
+      say('Not one of the rows - here is the pattern you made', null);
     }
     save();
     render();
@@ -531,7 +531,7 @@
     `The answer is ${TUTORIAL.a.toUpperCase()} - no guessing needed. Find the word that ` +
       'paints row 1 against it: two letters land in place, two are in the word but sitting ' +
       'somewhere else.',
-    'One down. Keep reading the picture as positions, not just letters - a grey tile means ' +
+    'One down. Keep reading the pattern as positions, not just letters - a grey tile means ' +
       `that letter is not in ${TUTORIAL.a.toUpperCase()} at all.`,
     'Last row. All yellow means every letter belongs, but not one of them is where it should be.',
     `That is the whole game. The real puzzle is five letters and four rows, and every row ` +
@@ -584,10 +584,10 @@
 
     if (hit >= 0) {
       tut.solved[hit] = guess;
-      tutorialSay(tutorialDone() ? 'Picture complete.' : 'That is row ' + (hit + 1) + '.', 'good');
+      tutorialSay(tutorialDone() ? 'Pattern complete.' : 'That is row ' + (hit + 1) + '.', 'good');
     } else if (!tut.misses.some((m) => m.w === guess)) {
       tut.misses.push({ w: guess, p: pattern });
-      tutorialSay('Not a row in the picture - but look at what you did paint');
+      tutorialSay('Not a row in the pattern - but look at what you did make');
     }
     renderTutorial();
   }
@@ -623,7 +623,10 @@
 
   tut.el.close.addEventListener('click', () => tut.el.dialog.close());
   document.getElementById('tut-x').addEventListener('click', () => tut.el.dialog.close());
-  document.getElementById('tutorial-open').addEventListener('click', openTutorial);
+
+  // The menu does not always offer a way in, so this entry point is optional.
+  const tutorialEntry = document.getElementById('tutorial-open');
+  if (tutorialEntry) tutorialEntry.addEventListener('click', openTutorial);
 
   el.share.addEventListener('click', async () => {
     const text = shareText();

@@ -69,15 +69,16 @@ browser.
 
 ## The tutorial
 
-The menu offers a worked example: a 3-row, 4-letter version of the
+A worked example ships with the game: a 3-row, 4-letter version of the
 same puzzle, built by `tools/generate-tutorial.js` against a 4,360-word
 dictionary with the same exactly-one-solution rule. It picks `TEAM`, whose rows
 are `MEAT` / `THEM` / `MATE` — an anagram ladder that teaches the difference
 between green and yellow without teaching vocabulary.
 
-It is fully playable, has a "reveal a row" escape hatch, and is reachable any
-time from the menu. Nothing is opened automatically on a first visit - the board
-is the first thing you see.
+It is fully playable and has a "reveal a row" escape hatch. The entry point is
+the `tutorial-open` button in the menu, which is optional markup - comment it out
+and the game drops the tutorial cleanly rather than failing to start. Nothing is
+opened automatically on a first visit; the board is the first thing you see.
 
 ## What else is in there
 

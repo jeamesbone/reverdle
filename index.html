@@ -85,21 +85,20 @@
     <button id="help-close" class="dialog-close" aria-label="Close">&times;</button>
   </div>
   <div class="dialog-body">
-  <p>Normal Wordle hides the answer and shows you the colours. <strong>Reverdle does the opposite.</strong></p>
+  <p>Find the words that match the Pattern</p>
   <ol>
     <li>You are given the answer word.</li>
-    <li>You are given a picture: four rows of green / yellow / grey tiles.</li>
-    <li>Find the guess word that would produce each row against that answer.</li>
+    <li>You are given a pattern: four rows of tiles.</li>
+    <li>Find the words that would produce each row.</li>
   </ol>
-  <p>Type any guess and it lands on whichever row it paints &mdash; rows can be solved in any order. Wrong guesses show you the picture you actually made, which is your best clue and costs you nothing but time.</p>
-  <p>You are scored on the <strong>clock</strong>, which starts on your first keystroke and pauses when you leave the tab.</p>
-  <p>Every row has <strong>exactly one</strong> solution out of all 14,854 accepted words. No ambiguity, no luck.</p>
+  <p>Rows can be solved in any order.</p>
+  <p>Every row has <strong>exactly one</strong> valid solution.</p>
   <p class="key-legend">
-    <span class="chip g"></span> right letter, right spot
-    <span class="chip y"></span> right letter, wrong spot
+    <span class="chip g"></span> in the same position as the answer
+    <span class="chip y"></span> in a different position to the answer
     <span class="chip x"></span> not in the answer
   </p>
-  <button id="tutorial-open" class="btn">Walk me through an example</button>
+  <!-- <button id="tutorial-open" class="btn">Walk me through an example</button> -->
 
   <div class="field">
     <span>Appearance</span>
