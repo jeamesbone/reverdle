@@ -99,7 +99,7 @@
     <span class="chip y"></span> in a different position to the answer
     <span class="chip x"></span> not in the answer
   </p>
-  <!-- <button id="tutorial-open" class="btn">Walk me through an example</button> -->
+  <button id="tutorial-open" class="btn">Show me an example</button>
 
   <div class="field">
     <span>Appearance</span>
@@ -130,7 +130,7 @@
 
 <dialog id="tutorial">
   <div class="dialog-head">
-    <h2>Tutorial</h2>
+    <h2>Example</h2>
     <button id="tut-x" class="dialog-close" aria-label="Close">&times;</button>
   </div>
   <div class="dialog-body">
@@ -142,14 +142,11 @@
   </div>
 
   <div id="tut-board" class="board"></div>
-  <div id="tut-current" class="row current"></div>
-  <p id="tut-message" class="message" role="status" aria-live="polite"></p>
-  <div id="tut-misses" class="misses"></div>
-  <div id="tut-keyboard" class="keyboard"></div>
+  <p id="tut-note" class="tut-note"></p>
 
   <div class="result-actions">
-    <button id="tut-hint" class="btn ghost">Reveal a row</button>
-    <button id="tut-close" class="btn">Close</button>
+    <button id="tut-reveal" class="btn">Reveal row 1</button>
+    <button id="tut-close" class="btn ghost">Close</button>
   </div>
   </div>
 </dialog>

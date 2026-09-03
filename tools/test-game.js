@@ -201,7 +201,7 @@ const skip = (why) => {
 };
 
 /**
- * Opens the tutorial through the menu. The entry point is optional markup, so
+ * Opens the example through the menu. The entry point is optional markup, so
  * this reports whether there was a way in rather than assuming one.
  */
 function openTutorial(ctx) {
@@ -209,7 +209,7 @@ function openTutorial(ctx) {
   if (!entry) return false;
   ctx.byId['help-btn'].fire('click');
   entry.fire('click');
-  assert.strictEqual(ctx.byId.help.open, false, 'opening the tutorial closes the menu');
+  assert.strictEqual(ctx.byId.help.open, false, 'opening the example closes the menu');
   return true;
 }
 
@@ -402,9 +402,11 @@ test('the colour-blind palette persists and repaints the body', () => {
   assert.strictEqual(again.byId['cb-toggle'].checked, true);
 });
 
-test('the tutorial is a smaller puzzle with the same single-solution rule', () => {
+test('the example is a real puzzle under the same single-solution rule', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
+  const dict = [...vm.runInContext('DICT', ctx)];
+
   const scoreIn = (g, a) => {
     const n = a.length;
     const out = new Array(n).fill(0);
@@ -418,43 +420,71 @@ test('the tutorial is a smaller puzzle with the same single-solution rule', () =
     }
     return out.join('');
   };
-  assert.strictEqual(tutorial.a.length, 4);
-  assert.strictEqual(tutorial.r.length, 3);
+
+  assert.strictEqual(tutorial.a.length, 5, 'five letters, like the real game');
+  assert.strictEqual(tutorial.r.length, 4, 'four rows, like the real game');
   for (const [pattern, word] of tutorial.r) {
-    const matches = [...tutorial.dict].filter((w) => scoreIn(w, tutorial.a) === pattern);
+    const matches = dict.filter((w) => scoreIn(w, tutorial.a) === pattern);
     assert.strictEqual(matches.length, 1, `${pattern} must have exactly one solution`);
     assert.strictEqual(matches[0], word);
   }
 });
 
-test('the tutorial can be played to the end', () => {
+test('the example reveals one row at a time', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
-  if (!openTutorial(ctx)) return skip('the menu does not offer the tutorial');
+  if (!openTutorial(ctx)) return skip('the menu does not offer the example');
 
-  typeWord(ctx, tutorial.r[0][1]);
-  assert.strictEqual(ctx.byId['tut-board'].children[0].textContent, tutorial.r[0][1]);
+  const rows = () => ctx.byId['tut-board'].children;
+  const shown = () => rows().filter((r) => r.textContent !== '').length;
 
-  // A wrong guess is kept on screen as feedback.
-  const wrong = [...tutorial.dict].find(
-    (w) => w !== tutorial.a && !tutorial.r.some(([, word]) => word === w)
+  assert.strictEqual(shown(), 0, 'starts with the pattern alone');
+  assert.strictEqual(ctx.byId['tut-reveal'].textContent, 'Reveal row 1');
+  assert.strictEqual(ctx.byId['tut-note'].textContent, '');
+
+  ctx.byId['tut-reveal'].fire('click');
+  assert.strictEqual(shown(), 1);
+  assert.strictEqual(rows()[0].textContent, tutorial.r[0][1]);
+  assert.strictEqual(ctx.byId['tut-reveal'].textContent, 'Reveal row 2');
+  assert.match(
+    ctx.byId['tut-note'].textContent,
+    new RegExp('^' + tutorial.r[0][1].toUpperCase() + ' - '),
+    'the note explains the row just revealed'
   );
-  typeWord(ctx, wrong);
-  assert.strictEqual(ctx.byId['tut-misses'].textContent, wrong);
 
-  ctx.byId['tut-hint'].fire('click');
-  ctx.byId['tut-hint'].fire('click');
-  assert.strictEqual(ctx.byId['tut-keyboard'].hidden, true, 'keyboard goes away when finished');
-  assert.strictEqual(ctx.byId['tut-close'].textContent, "Play today's puzzle");
+  for (let i = 1; i < tutorial.r.length; i++) ctx.byId['tut-reveal'].fire('click');
+  assert.strictEqual(shown(), tutorial.r.length);
+  assert.strictEqual(ctx.byId['tut-reveal'].hidden, true, 'nothing left to reveal');
+  assert.strictEqual(ctx.byId['tut-close'].textContent, 'Got it');
 });
 
-test('tutorial keystrokes do not leak into the daily puzzle', () => {
+test('the example explains every colour it shows', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
-  if (!openTutorial(ctx)) return skip('the menu does not offer the tutorial');
-  typeWord(ctx, tutorial.r[0][1]);
-  assert.strictEqual(solvedRows(ctx), 0, 'daily board untouched');
+  if (!openTutorial(ctx)) return skip('the menu does not offer the example');
+
+  const seen = { 2: false, 1: false, 0: false };
+  for (const [pattern] of tutorial.r) {
+    ctx.byId['tut-reveal'].fire('click');
+    const note = ctx.byId['tut-note'].textContent;
+    for (const colour of ['2', '1', '0']) {
+      if (!pattern.includes(colour)) continue;
+      seen[colour] = true;
+      const name = { 2: 'green', 1: 'yellow', 0: 'grey' }[colour];
+      assert.ok(note.includes(name + ':'), `${pattern} should mention ${name}`);
+    }
+  }
+  assert.ok(seen[2] && seen[1] && seen[0], 'the example shows all three colours');
 });
+
+test('typing while the example is open does not reach the board', () => {
+  const ctx = openPage();
+  const tutorial = vm.runInContext('TUTORIAL', ctx);
+  if (!openTutorial(ctx)) return skip('the menu does not offer the example');
+  typeWord(ctx, tutorial.r[0][1]);
+  assert.strictEqual(solvedRows(ctx), 0, 'board untouched');
+});
+
 
 test('the theme picker persists a choice and falls back to the system', () => {
   const store = new Map();
