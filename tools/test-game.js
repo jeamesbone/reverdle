@@ -129,6 +129,7 @@ function makeSandbox(store = new Map()) {
       setItem: (k, v) => store.set(k, String(v)),
       removeItem: (k) => store.delete(k),
       clear: () => store.clear(),
+      key: (i) => [...store.keys()][i] ?? null,
       get length() {
         return store.size;
       },
@@ -373,10 +374,11 @@ test('the theme picker persists a choice and falls back to the system', () => {
 test('reset asks first, then wipes everything', () => {
   const store = new Map();
   const ctx = openPage(store);
+  store.set('some-other-app', 'keep me');
   const { puzzle } = todaysPuzzle(ctx);
   puzzle.r.forEach(([, word]) => typeWord(ctx, word));
   ctx._theme('dark');
-  assert.ok(store.size > 1, 'there is something to wipe');
+  assert.ok(store.size > 2, 'there is something to wipe');
 
   ctx.byId['reset-btn'].fire('click');
   assert.strictEqual(ctx.byId['reset-confirm'].hidden, false, 'confirmation is shown');
@@ -384,11 +386,11 @@ test('reset asks first, then wipes everything', () => {
 
   ctx.byId['reset-no'].fire('click');
   assert.strictEqual(ctx.byId['reset-confirm'].hidden, true, 'cancel backs out');
-  assert.ok(store.size > 1, 'cancel keeps the data');
+  assert.ok(store.size > 2, 'cancel keeps the data');
 
   ctx.byId['reset-btn'].fire('click');
   ctx.byId['reset-yes'].fire('click');
-  assert.strictEqual(store.size, 0, 'localStorage is emptied');
+  assert.deepStrictEqual([...store.keys()], ['some-other-app'], 'only reverdle keys are removed');
   assert.strictEqual(ctx.byId.progress.textContent.trim(), `0/${puzzle.r.length}`);
   assert.strictEqual(ctx.byId.result.hidden, true);
   assert.strictEqual(ctx.document.documentElement.dataset.theme, undefined);
@@ -398,9 +400,8 @@ test('reset asks first, then wipes everything', () => {
   assert.strictEqual(ctx.byId['stats-empty'].hidden, false, 'stats are back to empty');
 
   // The unload handler must not write the cleared day straight back.
-  ctx.window.fire ? ctx.window.fire('pagehide') : null;
   typeWord(ctx, 'zzzzz');
-  assert.strictEqual(store.size, 0, 'nothing is written back after a wipe');
+  assert.deepStrictEqual([...store.keys()], ['some-other-app'], 'nothing is written back after a wipe');
 });
 
 let failed = 0;

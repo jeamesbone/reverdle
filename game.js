@@ -11,6 +11,7 @@
   const STATS_KEY = 'reverdle-stats';
   const CB_KEY = 'reverdle-cb';
   const THEME_KEY = 'reverdle-theme';
+  const KEY_PREFIX = 'reverdle-';
   const THEME_COLOURS = { light: '#f6f7f8', dark: '#0f1113' };
   const EMPTY_STATS = {
     played: 0,
@@ -83,6 +84,21 @@
       localStorage.setItem(key, value);
     } catch (e) {
       /* private browsing - play on without saving */
+    }
+  }
+
+  // Only ever removes this game's own keys. GitHub Pages puts every site on
+  // one origin, so localStorage.clear() would take the neighbours' data too.
+  function clearOwnKeys() {
+    try {
+      const doomed = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.indexOf(KEY_PREFIX) === 0) doomed.push(key);
+      }
+      for (const key of doomed) localStorage.removeItem(key);
+    } catch (e) {
+      /* nothing stored to clear */
     }
   }
 
@@ -621,11 +637,7 @@
   el.resetNo.addEventListener('click', () => showResetConfirm(false));
 
   el.resetYes.addEventListener('click', () => {
-    try {
-      localStorage.clear();
-    } catch (e) {
-      /* nothing stored to clear */
-    }
+    clearOwnKeys();
     // Drop every trace from memory too, in case the reload below cannot run.
     wiped = true;
     stats = Object.assign({}, EMPTY_STATS);

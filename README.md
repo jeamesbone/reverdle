@@ -89,12 +89,16 @@ time from the `?` button.
   `theme-color` meta tag follows.
 - **Colour-blind palette** — swaps green/yellow for blue/orange, including in
   the shared emoji picture.
-- **Installable and offline** — `manifest.webmanifest` plus a cache-first
-  service worker in `sw.js`. Bump `CACHE` there whenever an asset changes.
+- **Installable and offline** — `manifest.webmanifest` plus a service worker in
+  `sw.js`: network-first for the page so deploys are picked up immediately, and
+  stale-while-revalidate for assets so they refresh in the background. Bumping
+  `CACHE` forces the update a load earlier.
 - **Reduced motion** — tile pops and the shake animation are dropped when the
   system asks for it.
 - **Reset all data** — under *Data* in the how-to dialog. Two-step confirm, then
-  `localStorage.clear()` and a reload.
+  it removes every `reverdle-` key and reloads. It deliberately does *not* call
+  `localStorage.clear()`: GitHub Pages puts every site on one origin, so that
+  would wipe any neighbouring app's data too.
 
 ## Deploying
 

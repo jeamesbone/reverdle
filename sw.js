@@ -1,5 +1,5 @@
 /* Reverdle offline cache. Bump CACHE when any asset changes. */
-const CACHE = 'reverdle-v2';
+const CACHE = 'reverdle-v3';
 const ASSETS = [
   './',
   'index.html',
@@ -47,9 +47,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Assets are stale-while-revalidate: instant from cache, refreshed in the
+  // background, so a deploy lands on the load after next even without a bump.
   event.respondWith(
-    caches
-      .match(request)
-      .then((hit) => hit || fetch(request).then((response) => store(request, response)))
+    caches.match(request).then((hit) => {
+      const fresh = fetch(request)
+        .then((response) => store(request, response))
+        .catch(() => hit);
+      return hit || fresh;
+    })
   );
 });
