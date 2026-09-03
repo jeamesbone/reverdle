@@ -468,29 +468,20 @@ dialog p { margin: 10px 0; }
   font-size: 19px;
 }
 
-#tutorial .key {
-  height: 38px;
-  font-size: 12px;
-}
-
-#tutorial .misses .tile {
-  --tile: 28px;
-  font-size: 13px;
-}
-
-#tutorial .board,
-#tutorial .misses {
-  gap: 4px;
-}
+#tutorial .board { gap: 4px; }
 
 #tutorial .row { gap: 4px; }
 
-#tutorial .keyboard { margin: 12px 0 16px; }
-
-#tutorial .message { min-height: 16px; }
-
 .tut-lead {
   min-height: 40px;
+}
+
+.tut-note {
+  min-height: 42px;
+  margin: 12px 0 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .tut-answer {

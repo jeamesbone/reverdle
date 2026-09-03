@@ -15,7 +15,7 @@ dictionary, so a daily puzzle has a single unambiguous answer set. No luck, no
 Static site, no build step, no dependencies:
 
 ```bash
-python3 -m http.server 8123
+node tools/serve.js
 ```
 
 Then open http://localhost:8123.
@@ -43,6 +43,7 @@ Row count trades off against schedule length: 3 rows gives 1,671 puzzles, 4
 gives 1,218, 5 gives 789, 6 gives 450.
 
 ```bash
+node tools/serve.js              # local server, with caching off
 node tools/generate.js           # writes data/dict.js and data/puzzles.js
 node tools/generate-tutorial.js  # writes data/tutorial.js
 node tools/verify.js             # re-checks all 3,654 rows for uniqueness
@@ -67,18 +68,26 @@ browser.
   `reverdle-<dayIndex>`. Elapsed time is flushed on every guess, every five
   seconds, and on `visibilitychange` / `pagehide`.
 
-## The tutorial
+## The example
 
-A worked example ships with the game: a 3-row, 4-letter version of the
-same puzzle, built by `tools/generate-tutorial.js` against a 4,360-word
-dictionary with the same exactly-one-solution rule. It picks `TEAM`, whose rows
-are `MEAT` / `THEM` / `MATE` — an anagram ladder that teaches the difference
-between green and yellow without teaching vocabulary.
+The menu offers a worked example: a real puzzle of the same shape - five
+letters, four rows, every pattern with exactly one solution in the full
+dictionary - that you read rather than solve. A button reveals one row at a
+time, and each reveal is annotated straight from the pattern:
 
-It is fully playable and has a "reveal a row" escape hatch. The entry point is
-the `tutorial-open` button in the menu, which is optional markup - comment it out
-and the game drops the tutorial cleanly rather than failing to start. Nothing is
-opened automatically on a first visit; the board is the first thing you see.
+```
+STEIN - green: S, T, I and N already in the right place; grey: E not in STAIN at all.
+```
+
+`tools/generate-tutorial.js` picks it. On top of the daily rules it scores
+candidates on how much they teach: the opening row has to be mostly green, one
+row has to lean on yellows, and one has to show a letter that simply is not in
+the answer, so reading the four rows in order covers all three colours. It
+currently lands on `STAIN`, with rows `STEIN` / `SNAIL` / `SAINT` / `ETHIC`.
+
+The entry point is the `tutorial-open` button in the menu, which is optional
+markup - comment it out and the game drops the example cleanly rather than
+failing to start.
 
 ## What else is in there
 
@@ -129,12 +138,12 @@ manifest.webmanifest       install metadata
 icon.svg, icon-maskable.svg app icons
 data/words-guess.txt       14,854 accepted guesses (source of truth)
 data/words-common.txt      2,315 common words (solutions and answers)
-data/words-4.txt           4,360 four-letter words (tutorial dictionary)
 data/dict.js               generated: guess dictionary for the browser
 data/puzzles.js            generated: the daily schedule
-data/tutorial.js           generated: the tutorial puzzle
+data/tutorial.js           generated: the worked example
+tools/serve.js             local dev server
 tools/generate.js          puzzle builder
-tools/generate-tutorial.js tutorial builder
+tools/generate-tutorial.js example builder
 tools/verify.js            uniqueness check
 tools/test-game.js         headless game tests
 ```

@@ -507,118 +507,87 @@
     return head + '\n' + pic;
   }
 
-  // --- Tutorial: a 3-row, 4-letter version of the same puzzle ----------------
+  // --- Example: the same puzzle, walked through one row at a time ------------
 
   const tut = {
-    solved: TUTORIAL.r.map(() => null),
-    misses: [],
-    typed: '',
-    dict: new Set(TUTORIAL.dict),
+    revealed: 0,
     el: {
       dialog: document.getElementById('tutorial'),
       lead: document.getElementById('tut-lead'),
       answer: document.getElementById('tut-answer-row'),
       board: document.getElementById('tut-board'),
-      current: document.getElementById('tut-current'),
-      message: document.getElementById('tut-message'),
-      misses: document.getElementById('tut-misses'),
-      keyboard: document.getElementById('tut-keyboard'),
-      hint: document.getElementById('tut-hint'),
+      note: document.getElementById('tut-note'),
+      reveal: document.getElementById('tut-reveal'),
       close: document.getElementById('tut-close'),
     },
   };
 
-  const TUT_LEAD = [
-    `The answer is ${TUTORIAL.a.toUpperCase()} - no guessing needed. Find the word that ` +
-      'paints row 1 against it: two letters land in place, two are in the word but sitting ' +
-      'somewhere else.',
-    'One down. Keep reading the pattern as positions, not just letters - a grey tile means ' +
-      `that letter is not in ${TUTORIAL.a.toUpperCase()} at all.`,
-    'Last row. All yellow means every letter belongs, but not one of them is where it should be.',
-    `That is the whole game. The real puzzle is five letters and four rows, and every row ` +
-      'still has exactly one answer.',
-  ];
+  const ANSWER = TUTORIAL.a.toUpperCase();
 
-  function tutorialDone() {
-    return tut.solved.every(Boolean);
+  const TUT_LEAD =
+    `The answer is ${ANSWER}. Below it is a pattern of four rows, and each row is ` +
+    'a different word scored against that answer. Your job in the real game is to ' +
+    'work out those words. Reveal them one at a time to see how the colours read.';
+
+  const TUT_END =
+    'Every row has exactly one word that makes it, out of all 14,854 accepted ' +
+    'guesses - so there is nothing to guess at, only something to work out.';
+
+  function joinWords(list) {
+    if (list.length === 1) return list[0];
+    return list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1];
+  }
+
+  /** Reads a row back as the three things its colours are saying. */
+  function describeRow(word, pattern) {
+    const of = (colour) =>
+      word
+        .toUpperCase()
+        .split('')
+        .filter((_, i) => pattern[i] === colour);
+
+    const clauses = [];
+    const green = of('2');
+    const yellow = of('1');
+    const grey = of('0');
+    if (green.length) clauses.push(`green: ${joinWords(green)} already in the right place`);
+    if (yellow.length) clauses.push(`yellow: ${joinWords(yellow)} in ${ANSWER}, but not there`);
+    if (grey.length) clauses.push(`grey: ${joinWords(grey)} not in ${ANSWER} at all`);
+    return word.toUpperCase() + ' - ' + clauses.join('; ') + '.';
   }
 
   function renderTutorial() {
-    const done = tut.solved.filter(Boolean).length;
-    tut.el.lead.textContent = TUT_LEAD[done];
+    const done = tut.revealed >= TUTORIAL.r.length;
 
+    tut.el.lead.textContent = done ? TUT_END : TUT_LEAD;
     tut.el.answer.replaceChildren(...TUTORIAL.a.split('').map((c) => tile(c, null)));
 
     tut.el.board.replaceChildren(
-      ...TUTORIAL.r.map(([pattern], i) => rowOf(tut.solved[i], pattern, Boolean(tut.solved[i])))
+      ...TUTORIAL.r.map(([pattern, word], i) => {
+        const shown = i < tut.revealed;
+        return rowOf(shown ? word : null, pattern, shown);
+      })
     );
 
-    const cur = [];
-    for (let i = 0; i < TUTORIAL.a.length; i++) {
-      cur.push(tile(tut.typed[i] || '', null, tut.typed[i] ? 'filled' : ''));
-    }
-    tut.el.current.replaceChildren(...cur);
-    tut.el.current.hidden = tutorialDone();
-    tut.el.keyboard.hidden = tutorialDone();
-    tut.el.hint.hidden = tutorialDone();
-    tut.el.close.textContent = tutorialDone() ? "Play today's puzzle" : 'Close';
+    const last = TUTORIAL.r[tut.revealed - 1];
+    tut.el.note.textContent = last ? describeRow(last[1], last[0]) : '';
 
-    tut.el.misses.replaceChildren(
-      ...tut.misses.slice().reverse().map((m) => rowOf(m.w, m.p, true))
-    );
-  }
-
-  function tutorialSay(text, kind) {
-    tut.el.message.textContent = text;
-    tut.el.message.className = 'message' + (kind ? ' ' + kind : '');
-  }
-
-  function tutorialSubmit() {
-    const guess = tut.typed.toLowerCase();
-    if (guess.length < TUTORIAL.a.length) return tutorialSay('Needs four letters', 'warn');
-    if (!tut.dict.has(guess)) return tutorialSay('Not a word I know', 'warn');
-    if (guess === TUTORIAL.a) return tutorialSay('That is the answer - it would be all green', 'warn');
-
-    const pattern = score(guess, TUTORIAL.a);
-    const hit = TUTORIAL.r.findIndex(([p], i) => p === pattern && !tut.solved[i]);
-    tut.typed = '';
-
-    if (hit >= 0) {
-      tut.solved[hit] = guess;
-      tutorialSay(tutorialDone() ? 'Pattern complete.' : 'That is row ' + (hit + 1) + '.', 'good');
-    } else if (!tut.misses.some((m) => m.w === guess)) {
-      tut.misses.push({ w: guess, p: pattern });
-      tutorialSay('Not a row in the pattern - but look at what you did make');
-    }
-    renderTutorial();
-  }
-
-  function tutorialPress(k) {
-    if (tutorialDone()) return;
-    if (k === 'ENTER') return tutorialSubmit();
-    if (k === 'BACK') {
-      tut.typed = tut.typed.slice(0, -1);
-      return renderTutorial();
-    }
-    if (/^[a-z]$/.test(k) && tut.typed.length < TUTORIAL.a.length) {
-      tut.typed += k;
-      tutorialSay('');
-      renderTutorial();
-    }
+    tut.el.reveal.hidden = done;
+    tut.el.reveal.textContent = 'Reveal row ' + (tut.revealed + 1);
+    tut.el.close.textContent = done ? 'Got it' : 'Close';
+    tut.el.close.className = done ? 'btn' : 'btn ghost';
   }
 
   function openTutorial() {
+    tut.revealed = 0;
     renderTutorial();
     if (el.help.open) el.help.close();
     tut.el.dialog.showModal();
   }
 
-  tut.el.hint.addEventListener('click', () => {
-    const next = tut.solved.findIndex((w) => !w);
-    if (next < 0) return;
-    tut.solved[next] = TUTORIAL.r[next][1];
-    tut.typed = '';
-    tutorialSay('Row ' + (next + 1) + ' was ' + TUTORIAL.r[next][1].toUpperCase());
+  tut.el.reveal.addEventListener('click', () => {
+    if (tut.revealed >= TUTORIAL.r.length) return;
+    tut.revealed++;
     renderTutorial();
   });
 
@@ -701,8 +670,8 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const handler = tut.el.dialog.open ? tutorialPress : press;
-    if (!tut.el.dialog.open && (el.help.open || el.statsDialog.open)) return;
+    if (tut.el.dialog.open || el.help.open || el.statsDialog.open) return;
+    const handler = press;
     if (e.key === 'Enter') handler('ENTER');
     else if (e.key === 'Backspace') handler('BACK');
     else if (/^[a-zA-Z]$/.test(e.key)) handler(e.key.toLowerCase());
@@ -748,7 +717,6 @@
   }
 
   buildKeyboard(el.keyboard, press);
-  buildKeyboard(tut.el.keyboard, tutorialPress);
   loadDaily();
   render();
 })();
