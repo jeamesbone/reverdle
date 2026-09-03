@@ -176,6 +176,11 @@ function solvedRows(ctx) {
   return ctx.byId.board.children.filter((row) => row.textContent !== '').length;
 }
 
+/** The step counter above the board, e.g. "2 / 4". */
+function progress(ctx) {
+  return ctx.byId.progress.textContent;
+}
+
 function todaysPuzzle(ctx) {
   const day = vm.runInContext(
     'Math.floor((new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())' +
@@ -324,7 +329,39 @@ test('progress and elapsed time survive a reload', () => {
   const saved = JSON.parse(store.get('reverdle-' + day));
   assert.strictEqual(saved.solved[0], puzzle.r[0][1]);
   assert.ok(saved.elapsed >= 0);
-  assert.strictEqual(solvedRows(reload(store)), 1);
+  // Only the row being worked on is shown, so the counter is the progress.
+  assert.strictEqual(progress(reload(store)), '2 / ' + puzzle.r.length);
+});
+
+test('only one pattern is shown at a time, the whole list at the end', () => {
+  const ctx = openPage();
+  const { puzzle } = todaysPuzzle(ctx);
+  assert.strictEqual(ctx.byId.board.children.length, 1, 'one row on screen');
+  assert.strictEqual(progress(ctx), '1 / ' + puzzle.r.length);
+
+  typeWord(ctx, puzzle.r[0][1]);
+  assert.strictEqual(ctx.byId.board.children.length, 1, 'still one row');
+  assert.strictEqual(solvedRows(ctx), 0, 'the solved row makes way for the next');
+  assert.strictEqual(progress(ctx), '2 / ' + puzzle.r.length);
+
+  puzzle.r.slice(1).forEach(([, word]) => typeWord(ctx, word));
+  assert.strictEqual(ctx.byId.board.children.length, puzzle.r.length, 'the full list');
+  assert.strictEqual(solvedRows(ctx), puzzle.r.length);
+  assert.strictEqual(progress(ctx), puzzle.r.length + ' / ' + puzzle.r.length);
+});
+
+test('a later row\'s word is a miss while it is not the row on screen', () => {
+  const ctx = openPage();
+  const { puzzle } = todaysPuzzle(ctx);
+  const later = puzzle.r[puzzle.r.length - 1][1];
+  typeWord(ctx, later);
+  assert.strictEqual(progress(ctx), '1 / ' + puzzle.r.length, 'still on the first row');
+  assert.strictEqual(ctx.byId.misses.textContent, later, 'kept as a miss');
+
+  // And it still solves its own row once that row comes around.
+  puzzle.r.slice(0, -1).forEach(([, word]) => typeWord(ctx, word));
+  typeWord(ctx, later);
+  assert.strictEqual(ctx.byId.result.hidden, false);
 });
 
 test('the colour-blind palette persists and repaints the body', () => {

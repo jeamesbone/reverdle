@@ -108,6 +108,10 @@ main {
   gap: 10px;
 }
 
+/* Showing one row at a time leaves slack; split it above and below the play
+   area rather than letting it all pool between the board and the keyboard. */
+.answer-block { margin-top: auto; }
+
 .stack {
   flex: none;
   display: flex;
@@ -132,6 +136,16 @@ h2 {
   color: var(--muted);
   font-weight: 700;
   text-align: center;
+}
+
+/* The step counter above the board: "2 / 4". */
+.progress {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  color: var(--muted);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The answer row is the only outlined row, so it reads as itself. */

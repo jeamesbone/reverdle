@@ -53,6 +53,7 @@
   </section>
 
   <section class="stack board-block">
+    <p id="progress" class="progress"></p>
     <div id="board" class="board"></div>
   </section>
 
@@ -88,10 +89,10 @@
   <p>Find the words that match the Pattern</p>
   <ol>
     <li>You are given the answer word.</li>
-    <li>You are given a pattern: four rows of tiles.</li>
-    <li>Find the words that would produce each row.</li>
+    <li>You are shown one row of tiles at a time.</li>
+    <li>Find the word that would produce that row.</li>
   </ol>
-  <p>Rows can be solved in any order.</p>
+  <p>Rows come one after another; the counter says how far along you are.</p>
   <p>Every row has <strong>exactly one</strong> valid solution.</p>
   <p class="key-legend">
     <span class="chip g"></span> in the same position as the answer

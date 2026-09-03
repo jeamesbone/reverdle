@@ -2,9 +2,10 @@
 
 Play it: **https://jeamesbone.github.io/reverdle/**
 
-Wordle, reversed. You are **given the answer**. You are given a **picture** — four
-rows of green / yellow / grey tiles. Your job is to find the guess words that
-paint that picture against that answer.
+Wordle, reversed. You are **given the answer**. You are then shown a **row** of
+green / yellow / grey tiles at a time — four of them over a puzzle, counted off
+as `1 / 4`, `2 / 4` — and your job is to find the guess word that paints each
+one against that answer. The whole picture is only assembled at the end.
 
 Every row has **exactly one** solution across the full 14,854-word guess
 dictionary, so a daily puzzle has a single unambiguous answer set. No luck, no
@@ -55,11 +56,16 @@ browser.
 
 ## Rules in play
 
-- Guesses come from the full dictionary; a guess lands on whichever unsolved row
-  it happens to paint, so rows can be solved in any order.
+- Rows come one at a time, in the generated order (easiest first), and only the
+  row on screen can be hit. A guess that paints a later row is a miss for now,
+  but it still solves that row when it comes around, and is lifted out of the
+  miss list when it does.
 - Guessing the answer itself is rejected — all-green is never a target row.
 - Wrong guesses are kept on screen with their real colours. That feedback is the
   main deduction tool.
+- Solved rows leave the board; the counter above the pattern is the only
+  progress readout until the puzzle is finished, when every row is shown at once
+  with the word that painted it.
 - **Score is the clock.** It starts on your first keystroke, pauses when the tab
   is hidden, and stops when the last row is painted. Wrong guesses cost time,
   not points, so guessing to probe the answer is a legitimate tactic.
@@ -99,8 +105,10 @@ opened automatically on a first visit; the board is the first thing you see.
 - **Fits the viewport** — no page scrolling and no card chrome. The keyboard is
   pinned to the bottom and `fitBoard()` in `game.js` solves for the tile size:
   it collapses the tiles, measures everything else that is on screen, and gives
-  the rows whatever height is left. Misses scroll in place rather than pushing
-  the board around, laid out two-across with an odd one out centred.
+  the rows whatever height is left. Only two tile rows are on screen mid-puzzle,
+  so the play area is centred between the header and the keyboard. Misses scroll
+  in place rather than pushing the board around, laid out two-across with an odd
+  one out centred.
 - **A quiet clock** — the timer runs from your first keystroke but is only shown
   once the picture is finished. A ticking clock just makes the puzzle stressful.
 - **Reduced motion** — tile pops and the shake animation are dropped when the

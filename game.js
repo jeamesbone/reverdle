@@ -223,6 +223,12 @@
     }
   }
 
+  // The row the player is on. Rows are worked through in order, so this is
+  // simply the first one still unsolved, and -1 once the pattern is complete.
+  function activeRow() {
+    return state.solved.findIndex((w) => !w);
+  }
+
   // The clock runs only while the tab is visible and the puzzle is unfinished,
   // so closing the tab overnight does not wreck your time.
   function elapsedMs() {
@@ -299,7 +305,7 @@
     if (!root || !root.style || typeof root.style.setProperty !== 'function') return;
 
     const BORDER = 4; // a collapsed tile is still two 2px borders tall
-    const tileRows = 1 + state.rows.length + (state.done ? 0 : 1);
+    const tileRows = 1 + (state.done ? state.rows.length : 2); // answer + board + input
 
     root.style.setProperty('--tile', '0px');
 
@@ -361,15 +367,22 @@
       ...state.answer.split('').map((c) => tile(c, null))
     );
 
+    // One pattern at a time while playing; the whole list once it is finished.
+    const active = activeRow();
     el.board.replaceChildren(
-      ...state.rows.map(([pattern], i) => {
-        const solvedWord = state.solved[i];
-        const row = rowOf(solvedWord, pattern, Boolean(solvedWord));
-        if (solvedWord) row.classList.add('locked');
-        return row;
-      })
+      ...state.rows
+        .map(([pattern], i) => [pattern, i])
+        .filter(([, i]) => state.done || i === active)
+        .map(([pattern, i]) => {
+          const solvedWord = state.solved[i];
+          const row = rowOf(solvedWord, pattern, Boolean(solvedWord));
+          if (solvedWord) row.classList.add('locked');
+          return row;
+        })
     );
 
+    const total = state.rows.length;
+    el.progress.textContent = state.done ? total + ' / ' + total : active + 1 + ' / ' + total;
 
     const cur = [];
     for (let i = 0; i < 5; i++) {
@@ -429,27 +442,33 @@
       shake();
       return;
     }
-    if (state.solved.includes(guess) || state.misses.some((m) => m.w === guess)) {
+    const pattern = score(guess, state.answer);
+    // Only the row on screen can be hit - the later ones are not shown yet.
+    const active = activeRow();
+    const hit = active >= 0 && state.rows[active][0] === pattern ? active : -1;
+
+    // A miss from an earlier row is fair game once its own row comes around,
+    // so the repeat guard only applies to guesses that land nowhere.
+    if (hit < 0 && (state.solved.includes(guess) || state.misses.some((m) => m.w === guess))) {
       say('Already tried that one', 'warn');
       shake();
       return;
     }
 
-    const pattern = score(guess, state.answer);
-    const hit = state.rows.findIndex(([p], i) => p === pattern && !state.solved[i]);
-
     state.guesses++;
     state.typed = '';
 
     if (hit >= 0) {
+      // It is a solution now, not a miss - it should not be in both places.
+      state.misses = state.misses.filter((m) => m.w !== guess);
       state.solved[hit] = guess;
       state.done = state.solved.every(Boolean);
       if (state.done) {
         pauseClock();
         recordResult();
       }
-      const left = state.rows.length - state.solved.filter(Boolean).length;
-      say(state.done ? '' : left + (left === 1 ? ' row left' : ' rows left'), 'good');
+      // The counter above the next pattern already says how far along you are.
+      say('');
     } else {
       state.misses.push({ w: guess, p: pattern });
       // The miss appearing below says it better than a line of prose would.
