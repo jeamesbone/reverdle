@@ -3,9 +3,9 @@
 Play it: **https://jeamesbone.github.io/reverdle/**
 
 Wordle, reversed. You are **given the answer**. You are then shown a **row** of
-green / yellow / grey tiles at a time — four of them over a puzzle, counted off
-as `1 / 4`, `2 / 4` — and your job is to find the guess word that paints each
-one against that answer. The whole picture is only assembled at the end.
+green / yellow / grey tiles at a time — four of them over a puzzle, tracked by
+a row of pips — and your job is to find the guess word that paints each one
+against that answer. The whole picture is only assembled at the end.
 
 Every row has **exactly one** solution across the full 14,854-word guess
 dictionary, so a daily puzzle has a single unambiguous answer set. No luck, no
@@ -64,9 +64,14 @@ browser.
 - Guessing the answer itself is rejected — all-green is never a target row.
 - Wrong guesses are kept on screen with their real colours. That feedback is the
   main deduction tool.
-- Solved rows leave the board; the counter above the pattern is the only
+- Solved rows leave the board. A row of pips above the pattern is the only
   progress readout until the puzzle is finished, when every row is shown at once
-  with the word that painted it.
+  with the word that painted it: one pip per row, filled for what you have
+  painted, enlarged for the row on screen, hollow for what is still to come.
+  Deliberately not a thumbnail of the pattern - showing one row at a time only
+  works if the whole picture stays a payoff, so the indicator says where you
+  are without saying what is coming. It carries an `aria-label`, since the dots
+  have no text of their own.
 - **Score is the clock.** It starts on your first keystroke, pauses when the tab
   is hidden, and stops when the last row is painted. Wrong guesses cost time,
   not points, so guessing to probe the answer is a legitimate tactic.
@@ -79,7 +84,7 @@ browser.
 The menu offers a worked example: a real puzzle of the same shape - five
 letters, four rows, every pattern with exactly one solution in the full
 dictionary - that you read rather than solve. It walks the way the game plays:
-one pattern on screen, counted off as `1 / 4`, and the whole list only at the
+one pattern on screen, the same pips above it, and the whole list only at the
 end. One button carries both beats - it reveals the word in the row on screen,
 then moves on to the next row, so the pause in between is the time to read the
 annotation. Each annotation is generated straight from the pattern:

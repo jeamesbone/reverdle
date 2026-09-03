@@ -176,9 +176,14 @@ function solvedRows(ctx) {
   return ctx.byId.board.children.filter((row) => row.textContent !== '').length;
 }
 
-/** The step counter above the board, e.g. "2 / 4". */
-function progress(ctx) {
-  return ctx.byId.progress.textContent;
+/**
+ * The pips above a board, read as a string: "o" painted, "*" the row on
+ * screen, "." still to come. So a fresh four-row puzzle is "*...".
+ */
+function pips(ctx, id = 'progress') {
+  return ctx.byId[id].children
+    .map((p) => (p.classList.contains('done') ? 'o' : p.classList.contains('now') ? '*' : '.'))
+    .join('');
 }
 
 function todaysPuzzle(ctx) {
@@ -329,25 +334,27 @@ test('progress and elapsed time survive a reload', () => {
   const saved = JSON.parse(store.get('reverdle-' + day));
   assert.strictEqual(saved.solved[0], puzzle.r[0][1]);
   assert.ok(saved.elapsed >= 0);
-  // Only the row being worked on is shown, so the counter is the progress.
-  assert.strictEqual(progress(reload(store)), '2 / ' + puzzle.r.length);
+  // Only the row being worked on is shown, so the pips are the progress.
+  assert.strictEqual(pips(reload(store)), 'o*..');
 });
 
 test('only one pattern is shown at a time, the whole list at the end', () => {
   const ctx = openPage();
   const { puzzle } = todaysPuzzle(ctx);
   assert.strictEqual(ctx.byId.board.children.length, 1, 'one row on screen');
-  assert.strictEqual(progress(ctx), '1 / ' + puzzle.r.length);
+  assert.strictEqual(pips(ctx), '*...');
+  assert.strictEqual(ctx.byId.progress.attributes['aria-label'], 'Row 1 of 4');
 
   typeWord(ctx, puzzle.r[0][1]);
   assert.strictEqual(ctx.byId.board.children.length, 1, 'still one row');
   assert.strictEqual(solvedRows(ctx), 0, 'the solved row makes way for the next');
-  assert.strictEqual(progress(ctx), '2 / ' + puzzle.r.length);
+  assert.strictEqual(pips(ctx), 'o*..');
 
   puzzle.r.slice(1).forEach(([, word]) => typeWord(ctx, word));
   assert.strictEqual(ctx.byId.board.children.length, puzzle.r.length, 'the full list');
   assert.strictEqual(solvedRows(ctx), puzzle.r.length);
-  assert.strictEqual(progress(ctx), puzzle.r.length + ' / ' + puzzle.r.length);
+  assert.strictEqual(pips(ctx), 'oooo', 'every pip filled, none current');
+  assert.strictEqual(ctx.byId.progress.attributes['aria-label'], 'Pattern complete');
 });
 
 test('a later row\'s word is a miss while it is not the row on screen', () => {
@@ -355,7 +362,7 @@ test('a later row\'s word is a miss while it is not the row on screen', () => {
   const { puzzle } = todaysPuzzle(ctx);
   const later = puzzle.r[puzzle.r.length - 1][1];
   typeWord(ctx, later);
-  assert.strictEqual(progress(ctx), '1 / ' + puzzle.r.length, 'still on the first row');
+  assert.strictEqual(pips(ctx), '*...', 'still on the first row');
   assert.strictEqual(ctx.byId.misses.textContent, later, 'kept as a miss');
 
   // And it still solves its own row once that row comes around.
@@ -437,19 +444,18 @@ test('the example walks one row at a time, then shows the whole pattern', () => 
 
   const rows = () => ctx.byId['tut-board'].children;
   const button = () => ctx.byId['tut-reveal'];
-  const progress = () => ctx.byId['tut-progress'].textContent;
   const total = tutorial.r.length;
 
   assert.strictEqual(rows().length, 1, 'one row on screen, like the board');
   assert.strictEqual(rows()[0].textContent, '', 'the pattern alone to begin with');
-  assert.strictEqual(progress(), '1 / ' + total);
+  assert.strictEqual(pips(ctx, 'tut-progress'), '*...');
   assert.strictEqual(button().textContent, 'Reveal row 1');
   assert.strictEqual(ctx.byId['tut-note'].textContent, '');
 
   button().fire('click');
   assert.strictEqual(rows().length, 1, 'still just the one row');
   assert.strictEqual(rows()[0].textContent, tutorial.r[0][1]);
-  assert.strictEqual(progress(), '1 / ' + total, 'the counter waits for the next row');
+  assert.strictEqual(pips(ctx, 'tut-progress'), 'o...', 'the pip fills with the reveal');
   assert.strictEqual(button().textContent, 'Next row');
   assert.match(
     ctx.byId['tut-note'].textContent,
@@ -459,7 +465,7 @@ test('the example walks one row at a time, then shows the whole pattern', () => 
 
   button().fire('click');
   assert.strictEqual(rows()[0].textContent, '', 'the next pattern takes its place');
-  assert.strictEqual(progress(), '2 / ' + total);
+  assert.strictEqual(pips(ctx, 'tut-progress'), 'o*..');
   assert.strictEqual(ctx.byId['tut-note'].textContent, '', 'the note clears with the row');
 
   // Reveal and move on through the rest; the last row offers the full pattern.
@@ -475,7 +481,7 @@ test('the example walks one row at a time, then shows the whole pattern', () => 
     tutorial.r.map(([, word]) => word).join(' '),
     'each with the word that painted it'
   );
-  assert.strictEqual(progress(), total + ' / ' + total);
+  assert.strictEqual(pips(ctx, 'tut-progress'), 'oooo');
   assert.strictEqual(button().hidden, true, 'nothing left to reveal');
   assert.strictEqual(button().textContent, 'See the whole pattern', 'no row five');
   assert.strictEqual(ctx.byId['tut-close'].textContent, 'Got it');

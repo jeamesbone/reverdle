@@ -354,6 +354,24 @@
     return t;
   }
 
+  // Where you are, without saying what you are looking at: one pip per row,
+  // filled for the rows already painted and marked for the row on screen. A
+  // count would read the same; a picture of the pattern would give it away.
+  function renderPips(target, total, filled, at) {
+    target.replaceChildren(
+      ...Array.from({ length: total }, (_, i) => {
+        const pip = document.createElement('span');
+        pip.className = 'pip' + (i < filled ? ' done' : i === at ? ' now' : '');
+        return pip;
+      })
+    );
+    // The dots carry no text, so the row being worked on is said out loud here.
+    target.setAttribute(
+      'aria-label',
+      at >= 0 && at < total ? `Row ${at + 1} of ${total}` : 'Pattern complete'
+    );
+  }
+
   function rowOf(word, pattern, showLetters) {
     const row = document.createElement('div');
     row.className = 'row';
@@ -415,8 +433,14 @@
         })
     );
 
+    // A hit fills its pip on the beat, before the next row is marked current.
     const total = state.rows.length;
-    el.progress.textContent = state.done ? total + ' / ' + total : shown + 1 + ' / ' + total;
+    renderPips(
+      el.progress,
+      total,
+      state.solved.filter(Boolean).length,
+      state.done ? total : shown
+    );
 
     // The word stays put through a miss so the shake has something to shake.
     const typed = flashing && flashing.kind === 'miss' ? flashing.word : state.typed;
@@ -637,7 +661,7 @@
     tut.el.lead.textContent = done ? TUT_END : TUT_LEAD;
     tut.el.answer.replaceChildren(...TUTORIAL.a.split('').map((c) => tile(c, null)));
 
-    tut.el.progress.textContent = (done ? total : tut.at + 1) + ' / ' + total;
+    renderPips(tut.el.progress, total, tut.at + (tut.shown ? 1 : 0), done ? total : tut.at);
 
     // One row while walking through, every row once the walk is over - the same
     // shape the board takes, so the example cannot teach a layout the game

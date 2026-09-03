@@ -143,15 +143,28 @@ h2 {
   text-align: center;
 }
 
-/* The step counter above the board: "2 / 4". */
+/* One pip per row, above the board: how far along, and nothing about what is
+   coming. The current one grows rather than changing colour, so it reads even
+   where the fill colour has to work for a colour-blind palette. */
 .progress {
   margin: 0;
-  font-size: 11px;
-  letter-spacing: 1.6px;
-  color: var(--muted);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  min-height: 11px;
 }
+
+.pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background-color 0.25s ease, transform 0.25s ease;
+}
+
+.pip.done { background: var(--green); }
+.pip.now { background: var(--muted); transform: scale(1.5); }
 
 /* The answer row is the only outlined row, so it reads as itself. */
 .row.answer {
@@ -593,4 +606,6 @@ dialog p { margin: 10px 0; }
   .row.shake {
     animation: none;
   }
+
+  .pip { transition: none; }
 }
