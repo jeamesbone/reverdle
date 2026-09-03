@@ -461,6 +461,51 @@ test('the time is only reported once the pattern is finished', () => {
   assert.match(ctx.byId['result-text'].textContent, /^Pattern complete in \d+:\d\d/);
 });
 
+test('tapping a slot types into that position', () => {
+  const ctx = openPage();
+  const slots = () => ctx.byId['current-row'].children;
+  const word = () => slots().map((t) => t.textContent || '_').join('');
+
+  ctx._key('c');
+  ctx._key('r');
+  assert.strictEqual(word(), 'cr___', 'typing runs left to right');
+
+  slots()[4].fire('click');
+  ctx._key('e');
+  assert.strictEqual(word(), 'cr__e', 'a tapped slot takes the next letter');
+
+  // With a hole behind it, typing carries on from the first gap.
+  ctx._key('a');
+  assert.strictEqual(word(), 'cra_e');
+  ctx._key('n');
+  assert.strictEqual(word(), 'crane');
+  ctx._key('Enter');
+  assert.strictEqual(word(), '_____', 'the row clears after a guess');
+});
+
+test('the cursor is visible, moveable and erases in place', () => {
+  const ctx = openPage();
+  const slots = () => ctx.byId['current-row'].children;
+  const cursorAt = () => slots().findIndex((t) => t.classList.contains('cursor'));
+
+  assert.strictEqual(cursorAt(), 0, 'starts on the first slot');
+  ctx._key('a');
+  assert.strictEqual(cursorAt(), 1, 'advances as you type');
+
+  slots()[3].fire('click');
+  assert.strictEqual(cursorAt(), 3, 'tapping moves it');
+
+  ctx._key('ArrowLeft');
+  assert.strictEqual(cursorAt(), 2, 'arrow keys move it too');
+  ctx._key('ArrowRight');
+  assert.strictEqual(cursorAt(), 3);
+
+  slots()[0].fire('click');
+  ctx._key('Backspace');
+  assert.strictEqual(slots()[0].textContent, '', 'backspace clears where you are');
+  assert.strictEqual(cursorAt(), 0, 'and stays put when there was something to clear');
+});
+
 let failed = 0;
 let skipped = 0;
 for (const [name, fn] of tests) {

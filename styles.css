@@ -177,9 +177,19 @@ h2 {
   background: transparent;
 }
 
+.row.current .tile {
+  cursor: pointer;
+}
+
 .row.current .tile.filled {
   border-color: var(--muted);
   animation: pop 0.1s ease;
+}
+
+/* Tap a slot to type into it. The cursor says where the next letter lands. */
+.row.current .tile.cursor {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .row.shake { animation: shake 0.4s ease; }

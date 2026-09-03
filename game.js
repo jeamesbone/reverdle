@@ -161,7 +161,8 @@
       guesses: 0,
       elapsed: 0,
       runningSince: null,
-      typed: '',
+      letters: puzzle.a.split('').map(() => ''),
+      cursor: 0,
       done: false,
     };
     restore();
@@ -180,7 +181,8 @@
       guesses: 0,
       elapsed: 0,
       runningSince: null,
-      typed: '',
+      letters: puzzle.a.split('').map(() => ''),
+      cursor: 0,
       done: false,
     };
   }
@@ -371,11 +373,16 @@
     );
 
 
-    const cur = [];
-    for (let i = 0; i < 5; i++) {
-      cur.push(tile(state.typed[i] || '', null, state.typed[i] ? 'filled' : ''));
-    }
-    el.current.replaceChildren(...cur);
+    el.current.replaceChildren(
+      ...state.letters.map((letter, i) => {
+        const extra = (letter ? 'filled' : '') + (i === state.cursor ? ' cursor' : '');
+        const slot = tile(letter, null, extra.trim());
+        slot.setAttribute('role', 'button');
+        slot.setAttribute('aria-label', 'letter ' + (i + 1) + (letter ? ': ' + letter : ''));
+        slot.addEventListener('click', () => moveCursor(i));
+        return slot;
+      })
+    );
     el.inputCard.hidden = state.done;
     el.keyboard.hidden = state.done;
 
@@ -413,8 +420,8 @@
 
   function submit() {
     if (state.done) return;
-    const guess = state.typed.toLowerCase();
-    if (guess.length < 5) {
+    const guess = state.letters.join('').toLowerCase();
+    if (guess.length < state.letters.length) {
       say('Needs five letters', 'warn');
       shake();
       return;
@@ -439,7 +446,7 @@
     const hit = state.rows.findIndex(([p], i) => p === pattern && !state.solved[i]);
 
     state.guesses++;
-    state.typed = '';
+    clearGuess();
 
     if (hit >= 0) {
       state.solved[hit] = guess;
@@ -459,16 +466,48 @@
     render();
   }
 
+  function clearGuess() {
+    state.letters = state.letters.map(() => '');
+    state.cursor = 0;
+  }
+
+  function moveCursor(i) {
+    if (state.done) return;
+    state.cursor = Math.max(0, Math.min(state.letters.length - 1, i));
+    render();
+  }
+
+  /** The first empty slot at or after `from`, wrapping once. */
+  function nextGap(from) {
+    const n = state.letters.length;
+    for (let step = 0; step < n; step++) {
+      const i = (from + step) % n;
+      if (!state.letters[i]) return i;
+    }
+    return Math.min(from, n - 1);
+  }
+
   function press(k) {
     if (state.done) return;
     startClock();
     if (k === 'ENTER') return submit();
+
     if (k === 'BACK') {
-      state.typed = state.typed.slice(0, -1);
+      // Clear where you are; if it is already empty, back up and clear that.
+      if (!state.letters[state.cursor] && state.cursor > 0) state.cursor--;
+      state.letters[state.cursor] = '';
       return render();
     }
-    if (/^[a-z]$/.test(k) && state.typed.length < 5) {
-      state.typed += k;
+
+    if (k === 'LEFT' || k === 'RIGHT') {
+      return moveCursor(state.cursor + (k === 'LEFT' ? -1 : 1));
+    }
+
+    if (/^[a-z]$/.test(k)) {
+      state.letters[state.cursor] = k;
+      // Typing runs on into the next hole, so filling a word straight through
+      // still works, and so does patching one letter in the middle.
+      state.cursor = nextGap(state.cursor + 1);
       say('');
       render();
     }
@@ -705,6 +744,8 @@
     if (!tut.el.dialog.open && (el.help.open || el.statsDialog.open)) return;
     if (e.key === 'Enter') handler('ENTER');
     else if (e.key === 'Backspace') handler('BACK');
+    else if (e.key === 'ArrowLeft') handler('LEFT');
+    else if (e.key === 'ArrowRight') handler('RIGHT');
     else if (/^[a-zA-Z]$/.test(e.key)) handler(e.key.toLowerCase());
   });
 
@@ -712,7 +753,7 @@
     if (document.hidden) {
       pauseClock();
       save();
-    } else if (state.guesses > 0 || state.typed) {
+    } else if (state.guesses > 0 || state.letters.some(Boolean)) {
       startClock();
     }
   });
