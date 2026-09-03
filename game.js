@@ -592,8 +592,9 @@
 
   const TUT_LEAD =
     `The answer is ${ANSWER}. Below it is a pattern of four rows, and each row is ` +
-    'a different word scored against that answer. Your job in the real game is to ' +
-    'work out those words. Reveal them one at a time to see how the colours read.';
+    'a different word scored against that answer. The real game shows you those rows ' +
+    'one at a time and asks you for the word; here they are all laid out, so reveal ' +
+    'them in turn and see how the colours read.';
 
   const TUT_END =
     'Every row has exactly one word that makes it, out of all 14,854 accepted ' +
