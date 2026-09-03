@@ -25,7 +25,6 @@
 
   const el = {
     answer: document.getElementById('answer-row'),
-    answerHeading: document.getElementById('answer-heading'),
     board: document.getElementById('board'),
     inputCard: document.getElementById('input-card'),
     current: document.getElementById('current-row'),
@@ -51,6 +50,9 @@
     practice: document.getElementById('practice-btn'),
     keyboard: document.getElementById('keyboard'),
     puzzleId: document.getElementById('puzzle-id'),
+    header: document.getElementById('app-header'),
+    footnote: document.getElementById('footnote'),
+    main: document.getElementById('main'),
     help: document.getElementById('help'),
   };
 
@@ -245,11 +247,6 @@
     return m + ':' + String(s).padStart(2, '0');
   }
 
-  function paintClock() {
-    el.timer.textContent = formatTime(elapsedMs());
-    el.timer.classList.toggle('running', Boolean(state.runningSince));
-  }
-
   // Daily results only, once per day. Streak counts consecutive day indexes.
   function recordResult() {
     if (!state.daily) return;
@@ -292,6 +289,35 @@
     );
   }
 
+  // The keyboard is pinned to the bottom, so the tiles take whatever height is
+  // left over. Collapsing the tiles first and measuring everything else avoids
+  // guessing at label, gap and keyboard heights, which move with the font, the
+  // viewport and the browser's own chrome.
+  function fitBoard() {
+    if (typeof window !== 'object' || typeof window.innerHeight !== 'number') return;
+    const root = document.documentElement;
+    if (!root || !root.style || typeof root.style.setProperty !== 'function') return;
+
+    const BORDER = 4; // a collapsed tile is still two 2px borders tall
+    const tileRows = 1 + state.rows.length + (state.done ? 0 : 1);
+
+    root.style.setProperty('--tile', '0px');
+
+    const style = getComputedStyle(el.main);
+    const gap = parseFloat(style.rowGap) || 0;
+    const shown = Array.prototype.filter.call(el.main.children, (node) => !node.hidden);
+    let used = gap * Math.max(0, shown.length - 1);
+    for (const node of shown) used += node.offsetHeight;
+
+    const room =
+      el.main.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    const byHeight = (room - used) / tileRows + BORDER;
+    const byWidth = (el.main.clientWidth - 24 - 5 * 4) / 5;
+
+    const tile = Math.floor(Math.max(28, Math.min(62, Math.min(byHeight, byWidth))));
+    root.style.setProperty('--tile', tile + 'px');
+  }
+
   function applyTheme(next) {
     theme = next;
     const root = document.documentElement;
@@ -331,7 +357,6 @@
   }
 
   function render() {
-    el.answerHeading.textContent = state.daily ? "Today's answer" : 'The answer';
     el.answer.replaceChildren(
       ...state.answer.split('').map((c) => tile(c, null))
     );
@@ -345,9 +370,6 @@
       })
     );
 
-    const done = state.solved.filter(Boolean).length;
-    el.progress.textContent = ` ${done}/${state.rows.length}`;
-    paintClock();
 
     const cur = [];
     for (let i = 0; i < 5; i++) {
@@ -375,6 +397,7 @@
     }
 
     el.puzzleId.textContent = state.daily ? 'Reverdle #' + state.number : 'Practice puzzle';
+    fitBoard();
   }
 
   function say(text, kind) {
@@ -425,7 +448,8 @@
         pauseClock();
         recordResult();
       }
-      say(state.done ? '' : 'Row ' + (hit + 1) + ' painted', 'good');
+      const left = state.rows.length - state.solved.filter(Boolean).length;
+      say(state.done ? '' : left + (left === 1 ? ' row left' : ' rows left'), 'good');
     } else {
       state.misses.push({ w: guess, p: pattern });
       say('Not one of the rows - here is the picture you made', null);
@@ -687,24 +711,32 @@
     } else if (state.guesses > 0 || state.typed) {
       startClock();
     }
-    paintClock();
   });
+
+  window.addEventListener('resize', fitBoard);
+  window.addEventListener('orientationchange', fitBoard);
 
   window.addEventListener('pagehide', () => {
     pauseClock();
     save();
   });
 
+  // Flush the elapsed time periodically so a crash costs at most a few seconds.
   setInterval(() => {
-    if (!state.runningSince) return;
-    paintClock();
-    if (Math.floor(elapsedMs() / 1000) % 5 === 0) save();
-  }, 250);
+    if (state.runningSince) save();
+  }, 5000);
 
   applyTheme(theme);
   applyColourBlind(colourBlind);
   if (typeof navigator === 'object' && navigator.serviceWorker) {
+    // Never cache during development - a stale worker serves yesterday's build
+    // and the page silently disagrees with the source on disk.
+    const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
     window.addEventListener('load', () => {
+      if (local) {
+        navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+        return;
+      }
       navigator.serviceWorker.register('sw.js').catch(() => {
         /* offline support is a bonus, not a requirement */
       });

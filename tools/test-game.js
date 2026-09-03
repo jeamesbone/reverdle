@@ -169,6 +169,11 @@ function typeWord(ctx, word) {
   ctx._key('Enter');
 }
 
+/** Rows on the daily board that have a word revealed in them. */
+function solvedRows(ctx) {
+  return ctx.byId.board.children.filter((row) => row.textContent !== '').length;
+}
+
 function todaysPuzzle(ctx) {
   const day = vm.runInContext(
     'Math.floor((new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())' +
@@ -211,7 +216,7 @@ test('solving every row completes the picture', () => {
   const ctx = openPage();
   const { puzzle } = todaysPuzzle(ctx);
   puzzle.r.forEach(([, word]) => typeWord(ctx, word));
-  assert.strictEqual(ctx.byId.progress.textContent.trim(), `${puzzle.r.length}/${puzzle.r.length}`);
+  assert.strictEqual(solvedRows(ctx), puzzle.r.length);
   assert.strictEqual(ctx.byId.result.hidden, false);
   assert.strictEqual(ctx.byId['input-card'].hidden, true);
   assert.strictEqual(ctx.byId.keyboard.hidden, true);
@@ -296,7 +301,7 @@ test('progress and elapsed time survive a reload', () => {
   const saved = JSON.parse(store.get('reverdle-' + day));
   assert.strictEqual(saved.solved[0], puzzle.r[0][1]);
   assert.ok(saved.elapsed >= 0);
-  assert.strictEqual(reload(store).byId.progress.textContent.trim(), `1/${puzzle.r.length}`);
+  assert.strictEqual(solvedRows(reload(store)), 1);
 });
 
 test('the colour-blind palette persists and repaints the body', () => {
@@ -366,7 +371,7 @@ test('tutorial keystrokes do not leak into the daily puzzle', () => {
   const tutorial = vm.runInContext('TUTORIAL', ctx);
   ctx.byId['tutorial-open'].fire('click');
   typeWord(ctx, tutorial.r[0][1]);
-  assert.strictEqual(ctx.byId.progress.textContent.trim(), '0/4', 'daily board untouched');
+  assert.strictEqual(solvedRows(ctx), 0, 'daily board untouched');
 });
 
 test('the theme picker persists a choice and falls back to the system', () => {
@@ -410,7 +415,7 @@ test('reset asks first, then wipes everything', () => {
   ctx.byId['reset-btn'].fire('click');
   ctx.byId['reset-yes'].fire('click');
   assert.deepStrictEqual([...store.keys()], ['some-other-app'], 'only reverdle keys are removed');
-  assert.strictEqual(ctx.byId.progress.textContent.trim(), `0/${puzzle.r.length}`);
+  assert.strictEqual(solvedRows(ctx), 0);
   assert.strictEqual(ctx.byId.result.hidden, true);
   assert.strictEqual(ctx.document.documentElement.dataset.theme, undefined);
   assert.strictEqual(ctx.body.classList.contains('cb'), false);
@@ -421,6 +426,19 @@ test('reset asks first, then wipes everything', () => {
   // The unload handler must not write the cleared day straight back.
   typeWord(ctx, 'zzzzz');
   assert.deepStrictEqual([...store.keys()], ['some-other-app'], 'nothing is written back after a wipe');
+});
+
+test('the time is only reported once the picture is finished', () => {
+  const ctx = openPage();
+  const { puzzle } = todaysPuzzle(ctx);
+
+  puzzle.r.slice(0, -1).forEach(([, word]) => typeWord(ctx, word));
+  assert.strictEqual(ctx.byId.result.hidden, true, 'no time on screen mid-puzzle');
+  assert.doesNotMatch(ctx.byId.message.textContent, /\d:\d\d/);
+
+  typeWord(ctx, puzzle.r[puzzle.r.length - 1][1]);
+  assert.strictEqual(ctx.byId.result.hidden, false);
+  assert.match(ctx.byId['result-text'].textContent, /^Picture complete in \d+:\d\d/);
 });
 
 let failed = 0;

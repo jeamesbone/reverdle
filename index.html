@@ -29,7 +29,7 @@
 <noscript>
   <p style="text-align:center;padding:24px">Reverdle needs JavaScript to run.</p>
 </noscript>
-<header>
+<header id="app-header">
   <h1>Reverdle</h1>
   <button id="stats-btn" class="icon-btn left" aria-label="Statistics">
     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
@@ -47,29 +47,26 @@
   </button>
 </header>
 
-<main>
-  <section class="answer-card">
-    <h2 id="answer-heading">Today&rsquo;s answer</h2>
+<main id="main">
+  <section class="stack answer-block">
     <div id="answer-row" class="row answer" aria-label="the answer word"></div>
   </section>
 
-  <section class="board-card">
-    <h2>Target <span id="progress" class="progress"></span>
-      <span id="timer" class="timer">0:00</span></h2>
+  <section class="stack board-block">
     <div id="board" class="board"></div>
   </section>
 
-  <section id="input-card" class="input-card">
+  <section id="input-card" class="stack">
     <div id="current-row" class="row current"></div>
     <p id="message" class="message" role="status" aria-live="polite"></p>
   </section>
 
-  <section id="misses-card" class="misses-card" hidden>
+  <section id="misses-card" class="stack misses-block" hidden>
     <h2>Your misses</h2>
     <div id="misses" class="misses"></div>
   </section>
 
-  <section id="result" class="result" hidden>
+  <section id="result" class="stack result" hidden>
     <p id="result-text"></p>
     <div id="stats-summary" class="stats"></div>
     <div class="result-actions">
@@ -79,7 +76,7 @@
   </section>
 
   <div id="keyboard" class="keyboard"></div>
-  <p class="footnote"><span id="puzzle-id"></span> &middot; every row has exactly one solution</p>
+  <p id="footnote" class="footnote"><span id="puzzle-id"></span></p>
 </main>
 
 <dialog id="help">
@@ -87,6 +84,7 @@
     <h2>How to play</h2>
     <button id="help-close" class="dialog-close" aria-label="Close">&times;</button>
   </div>
+  <div class="dialog-body">
   <p>Normal Wordle hides the answer and shows you the colours. <strong>Reverdle does the opposite.</strong></p>
   <ol>
     <li>You are given the answer word.</li>
@@ -127,7 +125,7 @@
       </div>
     </div>
   </div>
-
+  </div>
 </dialog>
 
 <dialog id="tutorial">
@@ -135,6 +133,7 @@
     <h2>Tutorial</h2>
     <button id="tut-x" class="dialog-close" aria-label="Close">&times;</button>
   </div>
+  <div class="dialog-body">
   <p id="tut-lead" class="tut-lead"></p>
 
   <div class="tut-answer">
@@ -152,6 +151,7 @@
     <button id="tut-hint" class="btn ghost">Reveal a row</button>
     <button id="tut-close" class="btn">Close</button>
   </div>
+  </div>
 </dialog>
 
 <dialog id="stats-dialog">
@@ -159,8 +159,10 @@
     <h2>Statistics</h2>
     <button id="stats-close" class="dialog-close" aria-label="Close">&times;</button>
   </div>
+  <div class="dialog-body">
   <div id="stats-full" class="stats"></div>
   <p id="stats-empty" class="stats-empty">Finish today&rsquo;s puzzle to start a streak.</p>
+  </div>
 </dialog>
 
 <script src="data/dict.js"></script>

@@ -57,11 +57,17 @@ body {
   color: var(--fg);
   font-family: ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
   -webkit-text-size-adjust: 100%;
+  /* The whole game fits the viewport: the keyboard never leaves the bottom. */
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 header {
   position: relative;
-  padding: 16px 16px 14px;
+  flex: none;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   text-align: center;
 }
@@ -91,16 +97,35 @@ h1 {
 }
 
 main {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   max-width: 460px;
   margin: 0 auto;
-  padding: 16px 12px 24px;
+  padding: 10px 12px 8px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+}
+
+.stack {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Misses are the only part allowed to overflow - everything else must fit. */
+.misses-block {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100px;
+  overflow-y: auto;
 }
 
 h2 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 11px;
   letter-spacing: 1.6px;
   text-transform: uppercase;
@@ -109,33 +134,10 @@ h2 {
   text-align: center;
 }
 
-.answer-card,
-.board-card,
-.input-card,
-.misses-card,
-.result {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 12px;
+/* The answer row is the only outlined row, so it reads as itself. */
+.row.answer {
+  margin-bottom: 2px;
 }
-
-.input-card { padding-bottom: 6px; }
-
-.progress {
-  color: var(--accent);
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.timer {
-  float: right;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-  color: var(--muted);
-}
-
-.timer.running { color: var(--fg); }
 
 .row {
   display: flex;
@@ -155,7 +157,6 @@ h2 {
   height: var(--tile);
   display: grid;
   place-items: center;
-  font-size: 26px;
   font-weight: 700;
   text-transform: uppercase;
   border: 2px solid var(--line);
@@ -185,10 +186,10 @@ h2 {
 
 .misses { display: flex; flex-direction: column; gap: 5px; align-items: center; }
 .misses .row { opacity: 0.85; }
-.misses .tile { --tile: 34px; font-size: 16px; border-radius: 3px; }
+.misses .tile { --tile: 26px; font-size: 13px; border-radius: 3px; }
 
 .message {
-  margin: 8px 0 4px;
+  margin: 0;
   text-align: center;
   font-size: 13px;
   min-height: 18px;
@@ -199,10 +200,15 @@ h2 {
 .message.good { color: var(--green); }
 
 .keyboard {
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 2px;
+  width: 100%;
+  max-width: 460px;
+  /* Any slack goes above the keyboard, never below it. */
+  margin: auto auto 0;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
 }
 
 .krow { display: flex; gap: 5px; justify-content: center; }
@@ -210,7 +216,7 @@ h2 {
 .key {
   flex: 1 1 auto;
   min-width: 0;
-  height: 50px;
+  height: clamp(38px, 6.4dvh, 50px);
   border: 0;
   border-radius: 5px;
   background: var(--line);
@@ -225,7 +231,7 @@ h2 {
 .key.wide { flex: 1.6 1 auto; font-size: 11px; letter-spacing: 0.5px; }
 
 .result { text-align: center; }
-.result p { margin: 0 0 10px; font-size: 15px; }
+.result p { margin: 0; font-size: 15px; }
 
 .result-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
@@ -281,7 +287,8 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px 4px;
-  margin: 14px 0;
+  margin: 10px 0;
+  width: 100%;
 }
 
 .stat {
@@ -306,6 +313,7 @@ h2 {
 
 .stats-empty {
   text-align: center;
+  margin-top: 18px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -362,33 +370,50 @@ h2 {
 }
 
 .footnote {
+  flex: none;
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
-  margin: 2px 0 0;
+  margin: 0;
+  padding: 0 0 calc(4px + env(safe-area-inset-bottom));
 }
 
 dialog {
   width: calc(100vw - 32px);
   max-width: 420px;
-  max-height: 86vh;
-  overflow: auto;
+  max-height: 86dvh;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--panel);
   color: var(--fg);
-  padding: 24px 24px 28px;
+  padding: 0;
   font-size: 14px;
   line-height: 1.5;
 }
 
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The head belongs to the window, so the X stays put while the body scrolls. */
+.dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+
 dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .dialog-head {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  padding: 18px 20px 14px 24px;
+  border-bottom: 1px solid var(--line);
 }
 
 .dialog-close {
@@ -421,6 +446,7 @@ dialog h2 {
 
 dialog ol { padding-left: 20px; }
 dialog p { margin: 10px 0; }
+.dialog-body > *:first-child { margin-top: 16px; }
 
 #tutorial .tile {
   --tile: 40px;
@@ -494,9 +520,13 @@ dialog p { margin: 10px 0; }
   40%, 60% { transform: translateX(7px); }
 }
 
-@media (max-width: 400px) {
-  :root { --tile: 46px; }
-  .tile { font-size: 22px; }
+/* Tile glyphs scale with the tile, which JS sizes to the space left over. */
+.tile {
+  font-size: calc(var(--tile) * 0.46);
+}
+
+#tutorial .tile {
+  font-size: 19px;
 }
 
 @media (prefers-reduced-motion: reduce) {

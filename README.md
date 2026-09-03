@@ -91,9 +91,17 @@ is the first thing you see.
 - **Colour-blind palette** — swaps green/yellow for blue/orange, including in
   the shared emoji picture.
 - **Installable and offline** — `manifest.webmanifest` plus a service worker in
-  `sw.js`: network-first for the page so deploys are picked up immediately, and
+  `sw.js`, which deliberately does not register on localhost so development
+  never fights a stale cache: network-first for the page so deploys are picked up immediately, and
   stale-while-revalidate for assets so they refresh in the background. Bumping
   `CACHE` forces the update a load earlier.
+- **Fits the viewport** — no page scrolling and no card chrome. The keyboard is
+  pinned to the bottom and `fitBoard()` in `game.js` solves for the tile size:
+  it collapses the tiles, measures everything else that is on screen, and gives
+  the rows whatever height is left. Misses scroll in place rather than pushing
+  the board around.
+- **A quiet clock** — the timer runs from your first keystroke but is only shown
+  once the picture is finished. A ticking clock just makes the puzzle stressful.
 - **Reduced motion** — tile pops and the shake animation are dropped when the
   system asks for it.
 - **Reset all data** — under *Data* in the menu. Two-step confirm, then
