@@ -78,8 +78,11 @@ browser.
 
 The menu offers a worked example: a real puzzle of the same shape - five
 letters, four rows, every pattern with exactly one solution in the full
-dictionary - that you read rather than solve. A button reveals one row at a
-time, and each reveal is annotated straight from the pattern:
+dictionary - that you read rather than solve. It walks the way the game plays:
+one pattern on screen, counted off as `1 / 4`, and the whole list only at the
+end. One button carries both beats - it reveals the word in the row on screen,
+then moves on to the next row, so the pause in between is the time to read the
+annotation. Each annotation is generated straight from the pattern:
 
 ```
 STEIN - green: S, T, I and N already in the right place; grey: E not in STAIN at all.

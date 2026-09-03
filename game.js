@@ -575,12 +575,18 @@
 
   // --- Example: the same puzzle, walked through one row at a time ------------
 
+  // Walked the way the game is played: one pattern on screen at a time, counted
+  // off, and the whole list only at the end. `at` is the row being looked at,
+  // `shown` whether its word has been revealed yet.
   const tut = {
-    revealed: 0,
+    at: 0,
+    shown: false,
+    entering: false,
     el: {
       dialog: document.getElementById('tutorial'),
       lead: document.getElementById('tut-lead'),
       answer: document.getElementById('tut-answer-row'),
+      progress: document.getElementById('tut-progress'),
       board: document.getElementById('tut-board'),
       note: document.getElementById('tut-note'),
       reveal: document.getElementById('tut-reveal'),
@@ -591,14 +597,14 @@
   const ANSWER = TUTORIAL.a.toUpperCase();
 
   const TUT_LEAD =
-    `The answer is ${ANSWER}. Below it is a pattern of four rows, and each row is ` +
-    'a different word scored against that answer. The real game shows you those rows ' +
-    'one at a time and asks you for the word; here they are all laid out, so reveal ' +
-    'them in turn and see how the colours read.';
+    `The answer is ${ANSWER}. You are shown one row at a time, and each row is a ` +
+    'different word scored against that answer. In the real game you work the word ' +
+    'out and type it; here, reveal it and read what the colours were saying.';
 
   const TUT_END =
-    'Every row has exactly one word that makes it, out of all 14,854 accepted ' +
-    'guesses - so there is nothing to guess at, only something to work out.';
+    'That is the whole pattern, which you only see once it is finished. Every row ' +
+    'has exactly one word that makes it, out of all 14,854 accepted guesses - so ' +
+    'there is nothing to guess at, only something to work out.';
 
   function joinWords(list) {
     if (list.length === 1) return list[0];
@@ -624,38 +630,70 @@
   }
 
   function renderTutorial() {
-    const done = tut.revealed >= TUTORIAL.r.length;
+    const total = TUTORIAL.r.length;
+    const done = tut.at >= total;
+    const last = total - 1;
 
     tut.el.lead.textContent = done ? TUT_END : TUT_LEAD;
     tut.el.answer.replaceChildren(...TUTORIAL.a.split('').map((c) => tile(c, null)));
 
+    tut.el.progress.textContent = (done ? total : tut.at + 1) + ' / ' + total;
+
+    // One row while walking through, every row once the walk is over - the same
+    // shape the board takes, so the example cannot teach a layout the game
+    // does not use.
     tut.el.board.replaceChildren(
-      ...TUTORIAL.r.map(([pattern, word], i) => {
-        const shown = i < tut.revealed;
-        return rowOf(shown ? word : null, pattern, shown);
-      })
+      ...TUTORIAL.r.map(([pattern, word], i) => [pattern, word, i])
+        .filter(([, , i]) => done || i === tut.at)
+        .map(([pattern, word, i]) => {
+          const reveal = done || tut.shown;
+          const row = rowOf(reveal ? word : null, pattern, reveal);
+          if (reveal) row.classList.add('locked');
+          if (tut.shown && i === tut.at && !done) row.classList.add('hit');
+          if (tut.entering && !done) row.classList.add('entering');
+          return row;
+        })
     );
 
-    const last = TUTORIAL.r[tut.revealed - 1];
-    tut.el.note.textContent = last ? describeRow(last[1], last[0]) : '';
+    const current = TUTORIAL.r[tut.at];
+    tut.el.note.textContent = tut.shown && current ? describeRow(current[1], current[0]) : '';
 
+    // Left on its last label once there is nothing to reveal, rather than
+    // counting on to a row that does not exist.
     tut.el.reveal.hidden = done;
-    tut.el.reveal.textContent = 'Reveal row ' + (tut.revealed + 1);
+    if (!done) {
+      tut.el.reveal.textContent = !tut.shown
+        ? 'Reveal row ' + (tut.at + 1)
+        : tut.at === last
+          ? 'See the whole pattern'
+          : 'Next row';
+    }
     tut.el.close.textContent = done ? 'Got it' : 'Close';
     tut.el.close.className = done ? 'btn' : 'btn ghost';
   }
 
   function openTutorial() {
-    tut.revealed = 0;
+    tut.at = 0;
+    tut.shown = false;
+    tut.entering = false;
     renderTutorial();
     if (el.help.open) el.help.close();
     tut.el.dialog.showModal();
   }
 
+  // One button, two beats: reveal the word in the row on screen, then move on
+  // to the next row - the pause in between is the time to read the note.
   tut.el.reveal.addEventListener('click', () => {
-    if (tut.revealed >= TUTORIAL.r.length) return;
-    tut.revealed++;
+    if (tut.at >= TUTORIAL.r.length) return;
+    if (!tut.shown) {
+      tut.shown = true;
+    } else {
+      tut.at++;
+      tut.shown = false;
+      tut.entering = true;
+    }
     renderTutorial();
+    tut.entering = false;
   });
 
   tut.el.close.addEventListener('click', () => tut.el.dialog.close());

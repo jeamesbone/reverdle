@@ -430,31 +430,54 @@ test('the example is a real puzzle under the same single-solution rule', () => {
   }
 });
 
-test('the example reveals one row at a time', () => {
+test('the example walks one row at a time, then shows the whole pattern', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
   if (!openTutorial(ctx)) return skip('the menu does not offer the example');
 
   const rows = () => ctx.byId['tut-board'].children;
-  const shown = () => rows().filter((r) => r.textContent !== '').length;
+  const button = () => ctx.byId['tut-reveal'];
+  const progress = () => ctx.byId['tut-progress'].textContent;
+  const total = tutorial.r.length;
 
-  assert.strictEqual(shown(), 0, 'starts with the pattern alone');
-  assert.strictEqual(ctx.byId['tut-reveal'].textContent, 'Reveal row 1');
+  assert.strictEqual(rows().length, 1, 'one row on screen, like the board');
+  assert.strictEqual(rows()[0].textContent, '', 'the pattern alone to begin with');
+  assert.strictEqual(progress(), '1 / ' + total);
+  assert.strictEqual(button().textContent, 'Reveal row 1');
   assert.strictEqual(ctx.byId['tut-note'].textContent, '');
 
-  ctx.byId['tut-reveal'].fire('click');
-  assert.strictEqual(shown(), 1);
+  button().fire('click');
+  assert.strictEqual(rows().length, 1, 'still just the one row');
   assert.strictEqual(rows()[0].textContent, tutorial.r[0][1]);
-  assert.strictEqual(ctx.byId['tut-reveal'].textContent, 'Reveal row 2');
+  assert.strictEqual(progress(), '1 / ' + total, 'the counter waits for the next row');
+  assert.strictEqual(button().textContent, 'Next row');
   assert.match(
     ctx.byId['tut-note'].textContent,
     new RegExp('^' + tutorial.r[0][1].toUpperCase() + ' - '),
     'the note explains the row just revealed'
   );
 
-  for (let i = 1; i < tutorial.r.length; i++) ctx.byId['tut-reveal'].fire('click');
-  assert.strictEqual(shown(), tutorial.r.length);
-  assert.strictEqual(ctx.byId['tut-reveal'].hidden, true, 'nothing left to reveal');
+  button().fire('click');
+  assert.strictEqual(rows()[0].textContent, '', 'the next pattern takes its place');
+  assert.strictEqual(progress(), '2 / ' + total);
+  assert.strictEqual(ctx.byId['tut-note'].textContent, '', 'the note clears with the row');
+
+  // Reveal and move on through the rest; the last row offers the full pattern.
+  for (let i = 1; i < total; i++) {
+    button().fire('click');
+    if (i === total - 1) assert.strictEqual(button().textContent, 'See the whole pattern');
+    button().fire('click');
+  }
+
+  assert.strictEqual(rows().length, total, 'every row at the end');
+  assert.strictEqual(
+    rows().map((r) => r.textContent).join(' '),
+    tutorial.r.map(([, word]) => word).join(' '),
+    'each with the word that painted it'
+  );
+  assert.strictEqual(progress(), total + ' / ' + total);
+  assert.strictEqual(button().hidden, true, 'nothing left to reveal');
+  assert.strictEqual(button().textContent, 'See the whole pattern', 'no row five');
   assert.strictEqual(ctx.byId['tut-close'].textContent, 'Got it');
 });
 
@@ -465,7 +488,7 @@ test('the example explains every colour it shows', () => {
 
   const seen = { 2: false, 1: false, 0: false };
   for (const [pattern] of tutorial.r) {
-    ctx.byId['tut-reveal'].fire('click');
+    ctx.byId['tut-reveal'].fire('click'); // reveal the word
     const note = ctx.byId['tut-note'].textContent;
     for (const colour of ['2', '1', '0']) {
       if (!pattern.includes(colour)) continue;
@@ -473,6 +496,7 @@ test('the example explains every colour it shows', () => {
       const name = { 2: 'green', 1: 'yellow', 0: 'grey' }[colour];
       assert.ok(note.includes(name + ':'), `${pattern} should mention ${name}`);
     }
+    ctx.byId['tut-reveal'].fire('click'); // on to the next row
   }
   assert.ok(seen[2] && seen[1] && seen[0], 'the example shows all three colours');
 });
