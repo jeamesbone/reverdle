@@ -452,7 +452,8 @@
       say(state.done ? '' : left + (left === 1 ? ' row left' : ' rows left'), 'good');
     } else {
       state.misses.push({ w: guess, p: pattern });
-      say('Not one of the rows - here is the pattern you made', null);
+      // The miss appearing below says it better than a line of prose would.
+      say('');
     }
     save();
     render();

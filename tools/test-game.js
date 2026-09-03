@@ -253,6 +253,7 @@ test('a wrong guess is recorded as a miss with its real pattern', () => {
   typeWord(ctx, wrong);
   assert.strictEqual(ctx.byId['misses-card'].hidden, false);
   assert.strictEqual(ctx.byId.misses.textContent, wrong);
+  assert.strictEqual(ctx.byId.message.textContent, '', 'the miss speaks for itself');
 });
 
 test('the answer itself is rejected', () => {
