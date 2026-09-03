@@ -85,7 +85,7 @@ The menu offers a worked example: a real puzzle of the same shape - five
 letters, four rows, every pattern with exactly one solution in the full
 dictionary - that you read rather than solve. It walks the way the game plays:
 one pattern on screen, the same pips above it, and the whole list only at the
-end. One button carries both beats - it reveals the word in the row on screen,
+end. One button carries both beats - it reveals the word in the pattern on screen,
 then moves on to the next row, so the pause in between is the time to read the
 annotation. Each annotation is generated straight from the pattern:
 

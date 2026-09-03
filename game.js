@@ -378,7 +378,7 @@
     // The dots carry no text, so the row being worked on is said out loud here.
     target.setAttribute(
       'aria-label',
-      at >= 0 && at < total ? `Row ${at + 1} of ${total}` : 'Pattern complete'
+      at >= 0 && at < total ? `Pattern ${at + 1} of ${total}` : 'Picture complete'
     );
   }
 
@@ -536,7 +536,7 @@
       const g = state.guesses;
       const misses = g - state.rows.length;
       el.resultText.textContent =
-        `Pattern complete in ${formatTime(elapsedMs())}` +
+        `Picture complete in ${formatTime(elapsedMs())}` +
         (misses === 0 ? ' with no misses.' : ` with ${misses} miss${misses === 1 ? '' : 'es'}.`);
       el.share.hidden = !state.daily;
       el.statsSummary.hidden = !state.daily;
@@ -575,7 +575,7 @@
       return;
     }
     if (guess === state.answer) {
-      say('That is the answer itself - all green is not one of the rows', 'warn');
+      say('That is the answer itself - all green is not one of the patterns', 'warn');
       shake();
       return;
     }
@@ -690,14 +690,14 @@
   const ANSWER = TUTORIAL.a.toUpperCase();
 
   const TUT_LEAD =
-    `The answer is ${ANSWER}. You are shown one row at a time, and each row is a ` +
+    `The answer is ${ANSWER}. You are shown one pattern at a time, each of them a ` +
     'different word scored against that answer. In the real game you work the word ' +
     'out and type it; here, reveal it and read what the colours were saying.';
 
   const TUT_END =
-    'That is the whole pattern, which you only see once it is finished. Every row ' +
-    'has exactly one word that makes it, out of all 14,854 accepted guesses - so ' +
-    'there is nothing to guess at, only something to work out.';
+    'That is the whole picture, which you only see once it is finished. Every ' +
+    'pattern has exactly one word that makes it, out of all 14,854 accepted ' +
+    'guesses - so there is nothing to guess at, only something to work out.';
 
   function joinWords(list) {
     if (list.length === 1) return list[0];
@@ -756,10 +756,10 @@
     tut.el.reveal.hidden = done;
     if (!done) {
       tut.el.reveal.textContent = !tut.shown
-        ? 'Reveal row ' + (tut.at + 1)
+        ? 'Reveal the word'
         : tut.at === last
-          ? 'See the whole pattern'
-          : 'Next row';
+          ? 'See the whole picture'
+          : 'Next pattern';
     }
     tut.el.close.textContent = done ? 'Got it' : 'Close';
     tut.el.close.className = done ? 'btn' : 'btn ghost';

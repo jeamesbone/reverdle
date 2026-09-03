@@ -343,7 +343,7 @@ test('only one pattern is shown at a time, the whole list at the end', () => {
   const { puzzle } = todaysPuzzle(ctx);
   assert.strictEqual(ctx.byId.board.children.length, 1, 'one row on screen');
   assert.strictEqual(pips(ctx), '*...');
-  assert.strictEqual(ctx.byId.progress.attributes['aria-label'], 'Row 1 of 4');
+  assert.strictEqual(ctx.byId.progress.attributes['aria-label'], 'Pattern 1 of 4');
 
   typeWord(ctx, puzzle.r[0][1]);
   assert.strictEqual(ctx.byId.board.children.length, 1, 'still one row');
@@ -354,7 +354,7 @@ test('only one pattern is shown at a time, the whole list at the end', () => {
   assert.strictEqual(ctx.byId.board.children.length, puzzle.r.length, 'the full list');
   assert.strictEqual(solvedRows(ctx), puzzle.r.length);
   assert.strictEqual(pips(ctx), 'oooo', 'every pip filled, none current');
-  assert.strictEqual(ctx.byId.progress.attributes['aria-label'], 'Pattern complete');
+  assert.strictEqual(ctx.byId.progress.attributes['aria-label'], 'Picture complete');
 });
 
 test('a later row\'s word is a miss while it is not the row on screen', () => {
@@ -437,7 +437,7 @@ test('the example is a real puzzle under the same single-solution rule', () => {
   }
 });
 
-test('the example walks one row at a time, then shows the whole pattern', () => {
+test('the example walks one pattern at a time, then shows the picture', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
   if (!openTutorial(ctx)) return skip('the menu does not offer the example');
@@ -446,17 +446,17 @@ test('the example walks one row at a time, then shows the whole pattern', () => 
   const button = () => ctx.byId['tut-reveal'];
   const total = tutorial.r.length;
 
-  assert.strictEqual(rows().length, 1, 'one row on screen, like the board');
+  assert.strictEqual(rows().length, 1, 'one pattern on screen, like the board');
   assert.strictEqual(rows()[0].textContent, '', 'the pattern alone to begin with');
   assert.strictEqual(pips(ctx, 'tut-progress'), '*...');
-  assert.strictEqual(button().textContent, 'Reveal row 1');
+  assert.strictEqual(button().textContent, 'Reveal the word');
   assert.strictEqual(ctx.byId['tut-note'].textContent, '');
 
   button().fire('click');
-  assert.strictEqual(rows().length, 1, 'still just the one row');
+  assert.strictEqual(rows().length, 1, 'still just the one pattern');
   assert.strictEqual(rows()[0].textContent, tutorial.r[0][1]);
   assert.strictEqual(pips(ctx, 'tut-progress'), 'o...', 'the pip fills with the reveal');
-  assert.strictEqual(button().textContent, 'Next row');
+  assert.strictEqual(button().textContent, 'Next pattern');
   assert.match(
     ctx.byId['tut-note'].textContent,
     new RegExp('^' + tutorial.r[0][1].toUpperCase() + ' - '),
@@ -471,11 +471,11 @@ test('the example walks one row at a time, then shows the whole pattern', () => 
   // Reveal and move on through the rest; the last row offers the full pattern.
   for (let i = 1; i < total; i++) {
     button().fire('click');
-    if (i === total - 1) assert.strictEqual(button().textContent, 'See the whole pattern');
+    if (i === total - 1) assert.strictEqual(button().textContent, 'See the whole picture');
     button().fire('click');
   }
 
-  assert.strictEqual(rows().length, total, 'every row at the end');
+  assert.strictEqual(rows().length, total, 'every pattern at the end');
   assert.strictEqual(
     rows().map((r) => r.textContent).join(' '),
     tutorial.r.map(([, word]) => word).join(' '),
@@ -483,7 +483,7 @@ test('the example walks one row at a time, then shows the whole pattern', () => 
   );
   assert.strictEqual(pips(ctx, 'tut-progress'), 'oooo');
   assert.strictEqual(button().hidden, true, 'nothing left to reveal');
-  assert.strictEqual(button().textContent, 'See the whole pattern', 'no row five');
+  assert.strictEqual(button().textContent, 'See the whole picture', 'no fifth pattern');
   assert.strictEqual(ctx.byId['tut-close'].textContent, 'Got it');
 });
 
@@ -580,7 +580,7 @@ test('the time is only reported once the pattern is finished', () => {
 
   typeWord(ctx, puzzle.r[puzzle.r.length - 1][1]);
   assert.strictEqual(ctx.byId.result.hidden, false);
-  assert.match(ctx.byId['result-text'].textContent, /^Pattern complete in \d+:\d\d/);
+  assert.match(ctx.byId['result-text'].textContent, /^Picture complete in \d+:\d\d/);
 });
 
 let failed = 0;
