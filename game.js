@@ -391,19 +391,22 @@
     return row;
   }
 
-  // A guess is scored where you typed it, and then goes somewhere: one that
-  // fits is carried up into the pattern row it painted ('lift'), holds there a
-  // moment ('landed'), and the next pattern takes over; one that fits nothing
-  // gets most of the way and drops back ('bounce'). Purely visual - the state
-  // is saved before any of it starts - and skipped where there is no timer,
-  // which is how the headless tests play a puzzle synchronously.
-  const FLASH_MS = { lift: 520, landed: 420, bounce: 560 };
+  // A guess is scored where you typed it, a tile at a time from the left
+  // ('score'), and then goes somewhere: one that fits is carried up into the
+  // pattern row it painted ('lift'), holds there a moment ('landed'), and the
+  // next pattern takes over; one that fits nothing is knocked back and shaken
+  // off ('bounce'). A detail carrying a `row` is one aimed at that row, which
+  // is what tells the two apart. Purely visual - the state is saved before any
+  // of it starts - and skipped where there is no timer, which is how the
+  // headless tests play a puzzle synchronously.
+  const FLASH_MS = { score: 430, lift: 380, landed: 380, bounce: 480 };
   let flashTimer = null;
   let entering = false;
 
   function flash(detail) {
     state.flash = detail;
     render();
+    if (detail.kind === 'score') el.current.classList.add('scoring');
     if (detail.kind === 'lift' || detail.kind === 'bounce') {
       aimCurrentRow();
       el.current.classList.add(detail.kind === 'lift' ? 'lifting' : 'bouncing');
@@ -430,6 +433,14 @@
     if (!state.flash) return;
     const done = state.flash;
     state.flash = null;
+    if (done.kind === 'score') {
+      // Where the guess goes was decided at submit; the row it carries says so.
+      return flash(
+        typeof done.row === 'number'
+          ? { kind: 'lift', row: done.row, word: done.word, pattern: done.pattern }
+          : { kind: 'bounce', word: done.word, pattern: done.pattern }
+      );
+    }
     if (done.kind === 'lift') return flash({ kind: 'landed', row: done.row });
     entering = done.kind === 'landed' && !state.done;
     render();
@@ -448,8 +459,10 @@
     // row travelling up is the one carrying the word - and the full list waits
     // until it has landed.
     const active = activeRow();
-    const flying = Boolean(flashing && flashing.kind === 'lift');
-    const aimed = Boolean(flashing && (flashing.kind === 'lift' || flashing.kind === 'landed'));
+    // A detail with a row is aimed at it; while the word is still down in the
+    // input row that target stays on screen and stays empty.
+    const aimed = Boolean(flashing && typeof flashing.row === 'number');
+    const flying = aimed && (flashing.kind === 'score' || flashing.kind === 'lift');
     const shown = aimed ? flashing.row : active;
     el.board.replaceChildren(
       ...state.rows
@@ -490,6 +503,7 @@
     }
     el.current.replaceChildren(...cur);
     // flash() adds the travelling class back once it has measured the distance.
+    el.current.classList.remove('scoring');
     el.current.classList.remove('lifting');
     el.current.classList.remove('bouncing');
     el.current.classList.remove('wrong');
@@ -588,11 +602,11 @@
         recordResult();
       }
       save();
-      flash({ kind: 'lift', row: hit, word: guess, pattern: pattern });
+      flash({ kind: 'score', row: hit, word: guess, pattern: pattern });
     } else {
       state.misses.push({ w: guess, p: pattern });
       save();
-      flash({ kind: 'bounce', word: guess, pattern: pattern });
+      flash({ kind: 'score', word: guess, pattern: pattern });
     }
   }
 

@@ -246,11 +246,30 @@ h2 {
    sibling aimCurrentRow() at the moment the colours go in. Both animations
    hold still at the start: that pause is the beat you read the colours in. */
 .row.current.lifting {
-  animation: lift 520ms cubic-bezier(0.32, 0, 0.2, 1) both;
+  animation: lift 380ms cubic-bezier(0.32, 0, 0.2, 1) both;
 }
 
 .row.current.bouncing {
-  animation: bounce 560ms cubic-bezier(0.3, 0, 0.35, 1) both;
+  animation: bounce 480ms cubic-bezier(0.3, 0, 0.35, 1) both;
+}
+
+/* The score arrives a tile at a time, left to right, each one turning from an
+   empty tile into its colour. Only the 0% frame is written: the tiles already
+   carry their colour classes, so the end of the animation is whatever those
+   say, and one keyframe block covers all three colours. */
+.row.current.scoring .tile { animation: score 200ms ease both; }
+.row.current.scoring .tile:nth-child(2) { animation-delay: 55ms; }
+.row.current.scoring .tile:nth-child(3) { animation-delay: 110ms; }
+.row.current.scoring .tile:nth-child(4) { animation-delay: 165ms; }
+.row.current.scoring .tile:nth-child(5) { animation-delay: 220ms; }
+
+@keyframes score {
+  0% {
+    background-color: transparent;
+    border-color: var(--line);
+    color: var(--fg);
+    transform: scale(0.86);
+  }
 }
 
 /* Misses pair up two-across; an odd one out is centred on its own row. */
@@ -590,17 +609,21 @@ dialog p { margin: 10px 0; }
 
 /* Up, and it stays up - the board fills in underneath it as it arrives. */
 @keyframes lift {
-  0%, 24% { transform: translateY(0); }
+  0% { transform: translateY(0); }
   100% { transform: translateY(calc(-1 * var(--lift, 0px))); }
 }
 
-/* Most of the way up, off the row that would not have it, and back down. */
+/* Barely off the ground before the row it was aimed at turns it away, and it
+   shakes itself out on the way back down. It never gets close enough to look
+   like it might have fitted. */
 @keyframes bounce {
-  0%, 18% { transform: translateY(0); }
-  50% { transform: translateY(calc(-0.88 * var(--lift, 0px))); }
-  66% { transform: translateY(calc(-0.88 * var(--lift, 0px) + 14px)) rotate(-2deg); }
-  84% { transform: translateY(calc(-0.2 * var(--lift, 0px))) rotate(1deg); }
-  100% { transform: translateY(0) rotate(0deg); }
+  0% { transform: translateY(0); }
+  30% { transform: translateY(calc(-0.42 * var(--lift, 0px))); }
+  44% { transform: translateY(calc(-0.3 * var(--lift, 0px))) translateX(-8px) rotate(-1.6deg); }
+  58% { transform: translateY(calc(-0.19 * var(--lift, 0px))) translateX(8px) rotate(1.6deg); }
+  72% { transform: translateY(calc(-0.09 * var(--lift, 0px))) translateX(-5px) rotate(-1deg); }
+  86% { transform: translateY(0) translateX(3px) rotate(0.5deg); }
+  100% { transform: translateY(0) translateX(0) rotate(0deg); }
 }
 
 @keyframes rise {
@@ -629,6 +652,7 @@ dialog p { margin: 10px 0; }
   .board .row.entering .tile,
   .misses .row.entering .tile,
   .row.current .tile.filled,
+  .row.current.scoring .tile,
   .row.current.lifting,
   .row.current.bouncing,
   .row.shake {

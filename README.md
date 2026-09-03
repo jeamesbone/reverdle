@@ -138,14 +138,20 @@ failing to start.
   shunting the board around. Once that space is gone the miss list scrolls in
   place. Misses lay out two-across with an odd one out centred.
 - **A guess goes somewhere** — pressing enter scores the word where you typed
-  it, right there in the input row, and then the row travels. One that fits is
-  carried up onto the pattern row it painted and stays; the board fills in
-  underneath it as it arrives, so the swap is invisible and the row it lands on
-  is told not to pop. One that fits nothing gets most of the way, tips off the
-  row that would not have it, and drops back, while the miss rises into the
-  list below. A guess that never gets scored at all — not a word, wrong length,
-  already tried — has no colours to show, so it just goes red and shakes, and
-  keeps the word for you to edit.
+  it, right there in the input row, a tile at a time from the left. Then the
+  row travels. One that fits is carried up onto the pattern row it painted and
+  stays; the board fills in underneath it as it arrives, so the swap is
+  invisible and the row it lands on is told not to pop. One that fits nothing
+  barely leaves the ground before that row turns it away, and it shakes itself
+  out on the way back down — it never gets close enough to look like it might
+  have fitted — while the miss rises into the list below. A guess that never
+  gets scored at all — not a word, wrong length, already tried — has no colours
+  to show, so it just goes red and shakes, and keeps the word for you to edit.
+
+  The colours roll in from one keyframe block with only a `0%` frame in it: the
+  tiles already carry their colour classes, so the end of each tile's animation
+  is whatever its own class says, and green, yellow and grey all animate from
+  the same rule.
 
   `aimCurrentRow()` measures the gap between the two rows into `--lift` after
   the render that puts the colours in, so the distance always matches the
