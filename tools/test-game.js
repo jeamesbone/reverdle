@@ -159,9 +159,8 @@ function reload(store) {
   return boot(makeSandbox(store));
 }
 
-/** A page load for a returning player, past the first-run how-to dialog. */
+/** A page load. Nothing is auto-opened, so this is just a reload. */
 function openPage(store = new Map()) {
-  store.set('reverdle-seen', '1');
   return reload(store);
 }
 
@@ -183,10 +182,29 @@ function todaysPuzzle(ctx) {
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
 
-test('the how-to-play dialog opens on a first visit only', () => {
-  const store = new Map();
-  assert.strictEqual(reload(store).byId.help.open, true, 'shown on the first visit');
-  assert.strictEqual(reload(store).byId.help.open, false, 'not shown again');
+test('nothing is opened over the board on load; the menu button opens it', () => {
+  const ctx = reload(new Map());
+  assert.strictEqual(ctx.byId.help.open, false, 'no menu on a first visit');
+  assert.strictEqual(ctx.byId.tutorial.open, false, 'no tutorial either');
+
+  ctx.byId['help-btn'].fire('click');
+  assert.strictEqual(ctx.byId.help.open, true);
+
+  ctx.byId['help-close'].fire('click');
+  assert.strictEqual(ctx.byId.help.open, false, 'the X closes it');
+});
+
+test('every dialog closes from its own X', () => {
+  const ctx = openPage();
+  ctx.byId['stats-btn'].fire('click');
+  assert.strictEqual(ctx.byId['stats-dialog'].open, true);
+  ctx.byId['stats-close'].fire('click');
+  assert.strictEqual(ctx.byId['stats-dialog'].open, false);
+
+  ctx.byId['tutorial-open'].fire('click');
+  assert.strictEqual(ctx.byId.tutorial.open, true);
+  ctx.byId['tut-x'].fire('click');
+  assert.strictEqual(ctx.byId.tutorial.open, false);
 });
 
 test('solving every row completes the picture', () => {
@@ -322,9 +340,10 @@ test('the tutorial is a smaller puzzle with the same single-solution rule', () =
 test('the tutorial can be played to the end', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
+  ctx.byId['help-btn'].fire('click');
   ctx.byId['tutorial-open'].fire('click');
   assert.strictEqual(ctx.byId.tutorial.open, true);
-  assert.strictEqual(ctx.byId.help.open, false, 'opening the tutorial closes the how-to');
+  assert.strictEqual(ctx.byId.help.open, false, 'opening the tutorial closes the menu');
 
   typeWord(ctx, tutorial.r[0][1]);
   assert.strictEqual(ctx.byId['tut-board'].children[0].textContent, tutorial.r[0][1]);

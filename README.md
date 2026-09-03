@@ -69,14 +69,15 @@ browser.
 
 ## The tutorial
 
-The how-to-play dialog offers a worked example: a 3-row, 4-letter version of the
+The menu offers a worked example: a 3-row, 4-letter version of the
 same puzzle, built by `tools/generate-tutorial.js` against a 4,360-word
 dictionary with the same exactly-one-solution rule. It picks `TEAM`, whose rows
 are `MEAT` / `THEM` / `MATE` — an anagram ladder that teaches the difference
 between green and yellow without teaching vocabulary.
 
 It is fully playable, has a "reveal a row" escape hatch, and is reachable any
-time from the `?` button.
+time from the menu. Nothing is opened automatically on a first visit - the board
+is the first thing you see.
 
 ## What else is in there
 
@@ -95,7 +96,7 @@ time from the `?` button.
   `CACHE` forces the update a load earlier.
 - **Reduced motion** — tile pops and the shake animation are dropped when the
   system asks for it.
-- **Reset all data** — under *Data* in the how-to dialog. Two-step confirm, then
+- **Reset all data** — under *Data* in the menu. Two-step confirm, then
   it removes every `reverdle-` key and reloads. It deliberately does *not* call
   `localStorage.clear()`: GitHub Pages puts every site on one origin, so that
   would wipe any neighbouring app's data too.
@@ -130,7 +131,7 @@ tools/test-game.js         headless game tests
 ```
 
 Stored keys: `reverdle-<dayIndex>` (per-day progress), `reverdle-stats`,
-`reverdle-theme`, `reverdle-cb`, `reverdle-seen`.
+`reverdle-theme`, `reverdle-cb`.
 
 Day 0 of the schedule is `LAUNCH_DATE` in `data/puzzles.js` (2026-01-01). The
 index wraps after 1,218 days.

@@ -598,6 +598,7 @@
   });
 
   tut.el.close.addEventListener('click', () => tut.el.dialog.close());
+  document.getElementById('tut-x').addEventListener('click', () => tut.el.dialog.close());
   document.getElementById('tutorial-open').addEventListener('click', openTutorial);
 
   el.share.addEventListener('click', async () => {
@@ -714,12 +715,4 @@
   buildKeyboard(tut.el.keyboard, tutorialPress);
   loadDaily();
   render();
-  try {
-    if (!localStorage.getItem('reverdle-seen')) {
-      el.help.showModal();
-      localStorage.setItem('reverdle-seen', '1');
-    }
-  } catch (e) {
-    /* ignore */
-  }
 })();
