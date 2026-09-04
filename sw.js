@@ -1,5 +1,5 @@
 /* Reverdle offline cache. Bump CACHE when any asset changes. */
-const CACHE = 'reverdle-v3';
+const CACHE = 'reverdle-v4';
 const ASSETS = [
   './',
   'index.html',
