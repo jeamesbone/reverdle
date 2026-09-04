@@ -4,9 +4,13 @@
   const DICT_SET = new Set(DICT);
   const CLASS = { '2': 'g', '1': 'y', '0': 'x' };
   const EMOJI = {
-    normal: { '2': '\u{1F7E9}', '1': '\u{1F7E8}', '0': '\u{2B1C}' },
-    cb: { '2': '\u{1F7E6}', '1': '\u{1F7E7}', '0': '\u{2B1C}' },
+    normal: { '2': '\u{1F7E9}', '1': '\u{1F7E8}' },
+    cb: { '2': '\u{1F7E6}', '1': '\u{1F7E7}' },
   };
+  // A miss tile is barely-there grey in both themes, so unlike green/yellow it
+  // isn't a colour-blind concern - only whether the square reads on a light
+  // or a dark background.
+  const MISS_EMOJI = { light: '\u{2B1C}', dark: '\u{2B1B}' };
 
   const STATS_KEY = 'reverdle-stats';
   const CB_KEY = 'reverdle-cb';
@@ -335,16 +339,22 @@
     root.style.setProperty('--misses-max', Math.max(0, room - stack()) + 'px');
   }
 
+  // Whether `choice` ("light" / "dark" / "system") currently renders dark.
+  function resolvesDark(choice) {
+    return (
+      choice === 'dark' ||
+      (choice === 'system' &&
+        typeof matchMedia === 'function' &&
+        matchMedia('(prefers-color-scheme: dark)').matches)
+    );
+  }
+
   function applyTheme(next) {
     theme = next;
     const root = document.documentElement;
     if (next === 'system') delete root.dataset.theme;
     else root.dataset.theme = next;
-    const dark =
-      next === 'dark' ||
-      (next === 'system' &&
-        typeof matchMedia === 'function' &&
-        matchMedia('(prefers-color-scheme: dark)').matches);
+    const dark = resolvesDark(next);
     el.themeColour.setAttribute('content', dark ? THEME_COLOURS.dark : THEME_COLOURS.light);
     for (const b of el.themePicker.children) {
       b.setAttribute('aria-pressed', String(b.dataset.themeChoice === next));
@@ -659,7 +669,10 @@
     const head =
       `Reverdle #${state.number} - ${formatTime(elapsedMs())}` +
       (misses === 0 ? ' (clean)' : ` (${misses} miss${misses === 1 ? '' : 'es'})`);
-    const palette = EMOJI[colourBlind ? 'cb' : 'normal'];
+    const palette = Object.assign(
+      { '0': MISS_EMOJI[resolvesDark(theme) ? 'dark' : 'light'] },
+      EMOJI[colourBlind ? 'cb' : 'normal']
+    );
     const pic = state.rows
       .map(([p]) => p.split('').map((c) => palette[c]).join(''))
       .join('\n');

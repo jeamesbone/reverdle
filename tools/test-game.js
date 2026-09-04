@@ -409,6 +409,34 @@ test('the colour-blind palette persists and repaints the body', () => {
   assert.strictEqual(again.byId['cb-toggle'].checked, true);
 });
 
+test('the shared picture uses the miss square that matches the active theme', () => {
+  const ctx = openPage();
+  const { puzzle } = todaysPuzzle(ctx);
+  puzzle.r.forEach(([, word]) => typeWord(ctx, word));
+  const hasMiss = puzzle.r.some(([pattern]) => pattern.includes('0'));
+
+  let copied = '';
+  ctx.navigator.clipboard = {
+    writeText: (text) => {
+      copied = text;
+      return Promise.resolve();
+    },
+  };
+
+  ctx._theme('light');
+  ctx.byId['share-btn'].fire('click');
+  const light = copied;
+
+  ctx._theme('dark');
+  ctx.byId['share-btn'].fire('click');
+  const dark = copied;
+
+  assert.strictEqual(light.includes('⬜'), hasMiss, 'light mode uses the white square for a miss');
+  assert.strictEqual(dark.includes('⬛'), hasMiss, 'dark mode uses the black square for a miss');
+  assert.strictEqual(light.includes('⬛'), false, 'light mode never uses the dark square');
+  assert.strictEqual(dark.includes('⬜'), false, 'dark mode never uses the light square');
+});
+
 test('the example is a real puzzle under the same single-solution rule', () => {
   const ctx = openPage();
   const tutorial = vm.runInContext('TUTORIAL', ctx);
