@@ -56,6 +56,14 @@ body.cb .tile.y { color: #10141a; }
 /* Beat the display rules below - .keyboard sets display:flex. */
 [hidden] { display: none !important; }
 
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  /* Allow panning for the scrollable panels below, but no pinch/double-tap zoom. */
+  touch-action: pan-x pan-y;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -67,6 +75,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
 }
 
 header {
