@@ -50,6 +50,7 @@
     timer: document.getElementById('timer'),
     result: document.getElementById('result'),
     resultText: document.getElementById('result-text'),
+    hint: document.getElementById('hint-btn'),
     share: document.getElementById('share-btn'),
     practice: document.getElementById('practice-btn'),
     keyboard: document.getElementById('keyboard'),
@@ -162,6 +163,8 @@
       answer: puzzle.a,
       rows: puzzle.r,
       solved: puzzle.r.map(() => null),
+      revealed: puzzle.r.map(() => new Array(5).fill(null)),
+      hints: 0,
       misses: [],
       guesses: 0,
       elapsed: 0,
@@ -181,6 +184,8 @@
       answer: puzzle.a,
       rows: puzzle.r,
       solved: puzzle.r.map(() => null),
+      revealed: puzzle.r.map(() => new Array(5).fill(null)),
+      hints: 0,
       misses: [],
       guesses: 0,
       elapsed: 0,
@@ -197,6 +202,8 @@
         state.key,
         JSON.stringify({
           solved: state.solved,
+          revealed: state.revealed,
+          hints: state.hints,
           misses: state.misses,
           guesses: state.guesses,
           elapsed: elapsedMs(),
@@ -219,6 +226,9 @@
       const s = JSON.parse(raw);
       if (Array.isArray(s.solved) && s.solved.length === state.rows.length)
         state.solved = s.solved;
+      if (Array.isArray(s.revealed) && s.revealed.length === state.rows.length)
+        state.revealed = s.revealed;
+      if (typeof s.hints === 'number') state.hints = s.hints;
       if (Array.isArray(s.misses)) state.misses = s.misses;
       if (typeof s.guesses === 'number') state.guesses = s.guesses;
       if (typeof s.elapsed === 'number') state.elapsed = s.elapsed;
@@ -392,11 +402,19 @@
     );
   }
 
-  function rowOf(word, pattern, showLetters) {
+  // `revealed` is per-position letters hinted into an otherwise-unsolved row -
+  // ignored once the row is solved, since `word` already has every letter.
+  function rowOf(word, pattern, showLetters, revealed) {
     const row = document.createElement('div');
     row.className = 'row';
     for (let i = 0; i < pattern.length; i++) {
-      row.appendChild(tile(showLetters && word ? word[i] : '', CLASS[pattern[i]]));
+      if (showLetters && word) {
+        row.appendChild(tile(word[i], CLASS[pattern[i]]));
+      } else if (revealed && revealed[i]) {
+        row.appendChild(tile(revealed[i], CLASS[pattern[i]], 'hinted'));
+      } else {
+        row.appendChild(tile('', CLASS[pattern[i]]));
+      }
     }
     return row;
   }
@@ -486,7 +504,7 @@
         .map(([pattern, i]) => {
           const hold = flying && i === flashing.row;
           const solvedWord = hold ? null : state.solved[i];
-          const row = rowOf(solvedWord, pattern, Boolean(solvedWord));
+          const row = rowOf(solvedWord, pattern, Boolean(solvedWord), state.revealed[i]);
           if (solvedWord) row.classList.add('locked');
           else if (entering) row.classList.add('entering');
           // The row that just flew in is already exactly here; popping it now
@@ -528,6 +546,7 @@
     // it, and move the pattern row it is aiming at while it is on its way.
     el.inputCard.hidden = state.done && !flying;
     el.keyboard.hidden = state.done && !flying;
+    el.hint.disabled = active < 0 || state.revealed[active].every(Boolean);
 
     el.missesCard.hidden = state.misses.length === 0;
     el.misses.replaceChildren(
@@ -545,9 +564,10 @@
     if (state.done) {
       const g = state.guesses;
       const misses = g - state.rows.length;
+      const bits = [misses === 0 ? 'no misses' : `${misses} miss${misses === 1 ? '' : 'es'}`];
+      if (state.hints > 0) bits.push(`${state.hints} hint${state.hints === 1 ? '' : 's'}`);
       el.resultText.textContent =
-        `Picture complete in ${formatTime(elapsedMs())}` +
-        (misses === 0 ? ' with no misses.' : ` with ${misses} miss${misses === 1 ? '' : 'es'}.`);
+        `Picture complete in ${formatTime(elapsedMs())} with ${joinWords(bits)}.`;
       el.share.hidden = !state.daily;
       el.statsSummary.hidden = !state.daily;
       if (state.daily) renderStats(el.statsSummary);
@@ -625,6 +645,38 @@
     }
   }
 
+  // Blank tiles give away nothing at all; yellow narrows it down; green is
+  // already free just by comparing the pattern to the answer shown above. So
+  // that is the order worth spending a hint on.
+  const HINT_PRIORITY = { '0': 0, '1': 1, '2': 2 };
+
+  function nextHint(pattern, revealedRow) {
+    let best = -1;
+    for (let i = 0; i < pattern.length; i++) {
+      if (revealedRow[i]) continue;
+      if (best === -1 || HINT_PRIORITY[pattern[i]] < HINT_PRIORITY[pattern[best]]) best = i;
+    }
+    return best;
+  }
+
+  function useHint() {
+    if (state.done) return;
+    // Same rule as typing on: a hint mid-flight cuts the beat short rather
+    // than landing on top of it.
+    while (state.flash) endFlash();
+    const active = activeRow();
+    if (active < 0) return;
+    const [pattern, word] = state.rows[active];
+    const revealedRow = state.revealed[active];
+    const i = nextHint(pattern, revealedRow);
+    if (i < 0) return;
+    revealedRow[i] = word[i];
+    state.hints++;
+    startClock();
+    save();
+    render();
+  }
+
   function press(k) {
     if (state.done) return;
     startClock();
@@ -666,9 +718,9 @@
 
   function shareText() {
     const misses = state.guesses - state.rows.length;
-    const head =
-      `Reverdle #${state.number} - ${formatTime(elapsedMs())}` +
-      (misses === 0 ? ' (clean)' : ` (${misses} miss${misses === 1 ? '' : 'es'})`);
+    const bits = [misses === 0 ? 'clean' : `${misses} miss${misses === 1 ? '' : 'es'}`];
+    if (state.hints > 0) bits.push(`${state.hints} hint${state.hints === 1 ? '' : 's'}`);
+    const head = `Reverdle #${state.number} - ${formatTime(elapsedMs())} (${bits.join(', ')})`;
     const palette = Object.assign(
       { '0': MISS_EMOJI[resolvesDark(theme) ? 'dark' : 'light'] },
       EMOJI[colourBlind ? 'cb' : 'normal']
@@ -808,6 +860,8 @@
   // The menu does not always offer a way in, so this entry point is optional.
   const tutorialEntry = document.getElementById('tutorial-open');
   if (tutorialEntry) tutorialEntry.addEventListener('click', openTutorial);
+
+  el.hint.addEventListener('click', useHint);
 
   el.share.addEventListener('click', async () => {
     const text = shareText();

@@ -401,6 +401,20 @@ h2 {
   font-weight: 600;
 }
 
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hint-btn {
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+/* A hinted letter lands on a tile that was already coloured, so it gets its
+   own pop rather than the row's - the tile changes, not the whole row. */
+.tile.hinted { animation: pop 0.25s ease; }
+
 .icon-btn.left {
   right: auto;
   left: 14px;

@@ -254,6 +254,46 @@ test('solving every row completes the pattern', () => {
   assert.strictEqual(ctx.byId.keyboard.hidden, true);
 });
 
+test('a hint reveals letters blank tiles first, then yellow, then green', () => {
+  const ctx = openPage();
+  const { puzzle } = todaysPuzzle(ctx);
+  const [pattern, word] = puzzle.r[0];
+  const priority = { '0': 0, '1': 1, '2': 2 };
+  const order = [...pattern].map((_, i) => i).sort((a, b) => priority[pattern[a]] - priority[pattern[b]]);
+
+  for (let n = 0; n < order.length; n++) {
+    ctx.byId['hint-btn'].fire('click');
+    const revealedTile = ctx.byId.board.children[0].children[order[n]];
+    assert.strictEqual(revealedTile.textContent, word[order[n]], `hint ${n + 1} reveals the right letter`);
+    assert.ok(revealedTile.classList.contains('hinted'));
+  }
+  assert.strictEqual(ctx.byId['hint-btn'].disabled, true, 'nothing left once every letter is out');
+
+  // Nothing left to give away, so a further click changes nothing.
+  ctx.byId['hint-btn'].fire('click');
+  puzzle.r.forEach(([, w]) => typeWord(ctx, w));
+  assert.match(ctx.byId['result-text'].textContent, /\b5 hints\b/);
+  assert.match(ctx.byId['result-text'].textContent, /no misses/);
+});
+
+test('hints are per-pattern and survive a reload', () => {
+  const store = new Map();
+  const ctx = openPage(store);
+  const { day, puzzle } = todaysPuzzle(ctx);
+  ctx.byId['hint-btn'].fire('click');
+  typeWord(ctx, puzzle.r[0][1]);
+
+  const saved = JSON.parse(store.get('reverdle-' + day));
+  assert.strictEqual(saved.hints, 1);
+
+  const again = reload(store);
+  // The next pattern starts with a clean slate of its own.
+  assert.strictEqual(again.byId['hint-btn'].disabled, false);
+  again.byId['hint-btn'].fire('click');
+  const savedAgain = JSON.parse(store.get('reverdle-' + day));
+  assert.strictEqual(savedAgain.hints, 2, 'the count is cumulative across patterns');
+});
+
 test('a wrong guess is recorded as a miss with its real pattern', () => {
   const ctx = openPage();
   const { puzzle } = todaysPuzzle(ctx);
