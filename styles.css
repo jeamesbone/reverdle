@@ -502,6 +502,11 @@ h2 {
 }
 
 dialog {
+  /* body is a flex column; Safari sizes a dialog by its flex-item rules
+     instead of the ones below unless it's pinned out of that flow itself. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
   width: calc(100vw - 32px);
   max-width: 420px;
   max-height: 86dvh;
